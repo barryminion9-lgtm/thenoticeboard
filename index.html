@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The Notice Board</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;background:#fff;color:#1a1a1a}
+
+/* NAV */
+nav{position:sticky;top:0;z-index:200;background:#fff;border-bottom:1px solid #e8e8e8;height:72px;display:flex;align-items:center;padding:0 20px;gap:16px}
+.logo{font-weight:900;font-size:18px;color:#1a1a1a;white-space:nowrap;letter-spacing:-.3px;cursor:pointer;user-select:none;flex-shrink:0}
+.cats{display:flex;overflow-x:auto;flex:1;align-items:center;justify-content:center;scrollbar-width:none;gap:2px}
+.cats::-webkit-scrollbar{display:none}
+.cat{padding:8px 15px;border:none;background:transparent;font-family:inherit;font-size:13px;color:#1a1a1a;cursor:pointer;border-radius:4px;white-space:nowrap;font-weight:400}
+.cat.on{background:#1a1a1a;color:#fff;font-weight:900}
+.cat-mobile{display:none;padding:8px 12px;border:1.5px solid #e0e0e0;border-radius:4px;font-family:inherit;font-size:13px;color:#1a1a1a;background:#fff;outline:none;cursor:pointer}
+.nav-r{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.post-btn{display:flex;align-items:center;gap:5px;padding:9px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:4px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;white-space:nowrap}
+.loc{padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-family:inherit;font-size:13px;outline:none;cursor:pointer;color:#1a1a1a;background:#fff;max-width:150px}
+.user-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid #1a1a1a;background:#1a1a1a;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;overflow:hidden}
+.user-btn img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.srch-btn{background:none;border:none;cursor:pointer;font-size:19px;color:#1a1a1a;padding:4px;line-height:1;flex-shrink:0}
+.srch-inp{padding:8px 12px;border:1.5px solid #1a1a1a;border-radius:4px;font-family:inherit;font-size:13px;outline:none;width:160px}
+.about-btn{display:none}
+.about-nav-btn{background:none;border:none;cursor:pointer;font-size:13px;color:#888;font-family:inherit;padding:4px 10px;white-space:nowrap;flex-shrink:0;font-weight:600;transition:color .2s}
+.about-nav-btn:hover{color:#1a1a1a}
+
+/* GRID */
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;padding:3px;background:#e0e0e0;min-height:calc(100vh - 72px)}
+@media(max-width:1200px){.grid{grid-template-columns:repeat(4,1fr)}}
+@media(max-width:900px){.grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:380px){.grid{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:3px}
+.item{position:relative;overflow:hidden;cursor:pointer;background:#ddd}
+.item img{width:100%;display:block;transition:transform .4s ease;object-fit:cover}
+.item:hover img{transform:scale(1.05)}
+.overlay{position:absolute;inset:0;background:rgba(0,0,0,0);transition:background .3s;display:flex;flex-direction:column;justify-content:flex-end;padding:12px}
+.item:hover .overlay{background:rgba(0,0,0,.58)}
+.ov-inner{opacity:0;transform:translateY(5px);transition:all .25s}
+.item:hover .ov-inner{opacity:1;transform:translateY(0)}
+.ov-badge{display:inline-block;padding:2px 8px;border-radius:2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;background:rgba(255,255,255,.95);color:#1a1a1a;margin-bottom:5px}
+.ov-title{font-weight:900;font-size:14px;color:#fff;line-height:1.25;margin-bottom:3px;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+.ov-meta{font-size:11px;color:rgba(255,255,255,.8)}
+.ov-price{font-weight:900;font-size:13px;color:#fff;margin-top:4px}
+.like-badge{position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:20px;padding:4px 10px;font-size:11px;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:4px;transition:background .2s;z-index:3}
+.like-badge:hover{background:rgba(200,56,10,.8)}
+.like-badge.liked{background:rgba(200,56,10,.9)}
+.fav-badge{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.55);color:#fff;border:none;border-radius:50%;width:32px;height:32px;font-size:15px;font-family:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;z-index:3}
+.fav-badge:hover{background:rgba(255,200,0,.8);color:#fff}
+.fav-badge.faved{background:rgba(255,180,0,.9);color:#fff}
+
+/* FLYER CARD */
+.item.flyer-card .flyer-inner{width:100%;min-height:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 16px;text-align:center}
+.item.flyer-card .flyer-cat{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;opacity:.7;margin-bottom:10px;color:#fff}
+.item.flyer-card .flyer-title{font-weight:900;font-size:16px;line-height:1.25;margin-bottom:10px;color:#fff}
+.item.flyer-card .flyer-price{font-weight:900;font-size:18px;color:#fff;margin-bottom:8px;background:rgba(0,0,0,.2);padding:4px 14px;border-radius:20px;display:inline-block}
+.item.flyer-card .flyer-meta{font-size:11px;opacity:.8;color:#fff}
+
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:500;justify-content:center;align-items:center;padding:16px}
+.modal-bg.open{display:flex}
+.modal-box{background:#fff;border-radius:6px;width:100%;max-width:600px;max-height:94vh;overflow-y:auto;position:relative}
+.modal-close{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.55);border:none;border-radius:50%;width:36px;height:36px;color:#fff;font-size:18px;cursor:pointer;z-index:10;display:flex;align-items:center;justify-content:center}
+
+/* CAROUSEL */
+.carousel{position:relative;background:#111;overflow:hidden;min-height:240px;max-height:480px;display:flex;align-items:center}
+.car-track{display:flex;transition:transform .35s ease;width:100%}
+.car-slide{min-width:100%;display:flex;align-items:center;justify-content:center;background:#111;cursor:zoom-in}
+.car-slide img{width:100%;max-height:480px;object-fit:contain;display:block}
+.car-prev,.car-next{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.5);border:none;color:#fff;width:38px;height:38px;border-radius:50%;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;z-index:5}
+.car-prev:hover,.car-next:hover{background:rgba(0,0,0,.8)}
+.car-prev{left:10px}.car-next{right:10px}
+.car-dots{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:5}
+.car-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.5);cursor:pointer;border:none}
+.car-dot.on{background:#fff}
+.car-counter{position:absolute;top:10px;left:12px;background:rgba(0,0,0,.5);color:#fff;border-radius:4px;padding:4px 8px;font-size:11px;z-index:5}
+.car-stats{position:absolute;bottom:12px;left:12px;display:flex;align-items:center;gap:10px;z-index:5}
+.car-stat-pill{background:rgba(0,0,0,.5);color:#fff;border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;backdrop-filter:blur(4px)}
+
+/* MODAL BODY */
+.modal-body{padding:20px 24px 28px}
+.m-price{font-weight:900;font-size:22px;margin-bottom:8px}
+.m-badge{display:inline-block;padding:3px 9px;border-radius:2px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px}
+.m-title{font-weight:900;font-size:20px;margin-bottom:10px;line-height:1.25}
+.m-desc{font-size:14px;color:#555;line-height:1.7;margin-bottom:16px}
+.m-info{display:grid;grid-template-columns:1fr 1fr;gap:10px;background:#f7f7f7;border-radius:4px;padding:14px;margin-bottom:14px}
+.m-lbl{font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.m-val{font-size:13px;font-weight:700;word-break:break-word}
+.m-tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.m-tag{padding:3px 9px;background:#f0f0f0;border-radius:2px;font-size:11px;color:#555}
+.m-stats{display:flex;gap:12px;margin-bottom:14px;font-size:12px;color:#aaa}
+.m-btns{display:flex;gap:8px;flex-wrap:wrap}
+.m-btn-p{flex:2;min-width:110px;padding:12px;background:#1a1a1a;color:#fff;border:none;border-radius:4px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer}
+.m-btn-g{flex:1;min-width:70px;padding:12px;background:#fff;color:#1a1a1a;border:1.5px solid #1a1a1a;border-radius:4px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.m-btn-r{flex:1;min-width:70px;padding:12px;background:#fff;color:#cc0000;border:1.5px solid #cc0000;border-radius:4px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
+
+/* LIGHTBOX */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.96);z-index:1000;align-items:center;justify-content:center;flex-direction:column}
+.lightbox.open{display:flex}
+.lb-img{max-width:96vw;max-height:86vh;object-fit:contain;cursor:zoom-out}
+.lb-close{position:absolute;top:16px;right:16px;background:rgba(255,255,255,.15);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.lb-save{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:#fff;color:#1a1a1a;border:none;border-radius:4px;padding:10px 24px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer}
+
+/* SIDE PANEL */
+.panel-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:600}
+.panel-bg.open{display:block}
+.panel{position:fixed;top:0;right:-640px;width:100%;max-width:600px;height:100vh;background:#fff;z-index:700;overflow-y:auto;transition:right .3s ease;box-shadow:-4px 0 32px rgba(0,0,0,.12)}
+.panel.open{right:0}
+@media(max-width:640px){.panel{max-width:100%}}
+.ph{padding:18px 24px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:2}
+.ph-title{font-weight:900;font-size:17px;letter-spacing:-.3px}
+.ph-close{background:none;border:none;font-size:22px;cursor:pointer;line-height:1;padding:4px;color:#1a1a1a}
+
+/* FORM */
+.pf{padding:24px 24px 48px}
+.fl{display:block;font-size:12px;font-weight:700;color:#1a1a1a;margin-bottom:7px}
+.req{color:#cc0000;margin-left:2px}
+.opt{color:#aaa;font-weight:400}
+.fi{width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:6px;font-family:inherit;font-size:14px;outline:none;color:#1a1a1a;background:#fff;transition:border-color .2s}
+.fi:focus{border-color:#1a1a1a}
+textarea.fi{resize:vertical;min-height:90px}
+select.fi{cursor:pointer}
+.fg{margin-bottom:18px}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+@media(max-width:480px){.frow{grid-template-columns:1fr}.frow>div{margin-bottom:18px}}
+.sec{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#aaa;margin:24px 0 14px;padding-bottom:8px;border-bottom:1px solid #f0f0f0}
+.form-err-box{background:#fff0f0;border:1px solid #ffcccc;border-radius:6px;padding:12px 16px;margin-bottom:18px;font-size:13px;color:#cc0000;display:none}
+.form-err-box.show{display:block}
+
+/* UPLOAD */
+.img-upload-area{border:2px dashed #ddd;border-radius:8px;padding:28px 20px;text-align:center;cursor:pointer;background:#fafafa;transition:all .2s;margin-bottom:10px}
+.img-upload-area:hover{border-color:#1a1a1a}
+.upload-ic{width:44px;height:44px;border-radius:50%;background:#efefef;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:20px}
+.upload-t{font-size:14px;font-weight:600;color:#1a1a1a;margin-bottom:4px}
+.upload-s{font-size:12px;color:#aaa}
+.img-thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.img-thumb{position:relative;width:80px;height:80px;border-radius:4px;overflow:hidden;border:1.5px solid #eee;flex-shrink:0}
+.img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.img-thumb-del{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.65);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.img-count{font-size:12px;color:#aaa;margin-bottom:10px}
+.or-line{display:flex;align-items:center;gap:12px;margin:10px 0 14px;font-size:12px;color:#aaa}
+.or-line::before,.or-line::after{content:'';flex:1;height:1px;background:#eee}
+.ai-btn{display:flex;align-items:center;justify-content:center;gap:7px;padding:12px 20px;border:1.5px solid #ddd;border-radius:6px;background:#fff;font-family:inherit;font-size:14px;font-weight:600;color:#555;cursor:pointer;width:100%}
+.ai-btn:hover{border-color:#1a1a1a;color:#1a1a1a}
+.ai-form{background:#f8f8f8;border-radius:8px;padding:18px;margin-top:12px;border:1px solid #eee}
+.ai-generating{text-align:center;padding:24px;font-size:13px;color:#888;display:none}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid #ddd;border-top-color:#1a1a1a;border-radius:50%;animation:spin .7s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ai-flyer-actions{display:flex;gap:8px;margin-top:10px}
+.ai-approve-btn{flex:2;padding:12px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:900;font-size:13px;cursor:pointer}
+.ai-dl-btn{flex:1;padding:12px;background:#fff;color:#1a1a1a;border:1.5px solid #1a1a1a;border-radius:6px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
+.ai-regen-btn{flex:1;padding:12px;background:#fff;color:#555;border:1.5px solid #ddd;border-radius:6px;font-family:inherit;font-weight:600;font-size:13px;cursor:pointer}
+
+/* BUTTONS */
+.fb-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
+.fb-prev{padding:14px;background:#fff;color:#1a1a1a;border:1.5px solid #1a1a1a;border-radius:6px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.fb-post{padding:14px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:900;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-full-b{width:100%;padding:14px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:900;font-size:14px;cursor:pointer;margin-top:8px}
+.btn-full-g{width:100%;padding:14px;background:#fff;color:#1a1a1a;border:1.5px solid #1a1a1a;border-radius:6px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;margin-top:10px}
+
+/* PROFILE */
+.avatar-wrap{position:relative;width:84px;height:84px;margin:0 auto 16px;cursor:pointer}
+.avatar-img{width:84px;height:84px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:28px;color:#fff;overflow:hidden}
+.avatar-img img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.avatar-edit{position:absolute;bottom:0;right:0;width:26px;height:26px;border-radius:50%;background:#1a1a1a;border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+.p-name{font-weight:900;font-size:20px;text-align:center;margin-bottom:4px}
+.p-email{font-size:13px;color:#aaa;text-align:center;margin-bottom:22px}
+.stat-row{display:flex;gap:12px;margin-bottom:22px}
+.stat-box{flex:1;background:#f7f7f7;border-radius:6px;padding:14px;text-align:center}
+.stat-v{font-weight:900;font-size:20px}
+.stat-l{font-size:11px;color:#aaa;margin-top:2px;text-transform:uppercase;letter-spacing:.5px}
+hr.div{border:none;border-top:1px solid #eee;margin:18px 0}
+.essential-notice{background:#fff8e1;border:1px solid #ffe082;border-radius:6px;padding:12px 14px;font-size:13px;color:#7d5a00;margin-bottom:20px;line-height:1.5}
+
+/* MY POSTS IN PROFILE */
+.my-post-card{background:#f9f9f9;border-radius:8px;overflow:hidden;border:1px solid #f0f0f0;margin-bottom:12px;display:flex;gap:0;cursor:pointer}
+.my-post-card:hover{border-color:#ddd}
+.my-post-thumb{width:80px;height:80px;object-fit:cover;flex-shrink:0}
+.my-post-thumb-color{width:80px;height:80px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:rgba(255,255,255,.8);text-align:center;padding:6px}
+.my-post-info{padding:10px 12px;flex:1;min-width:0}
+.my-post-title{font-weight:700;font-size:13px;color:#1a1a1a;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.my-post-meta{font-size:11px;color:#aaa;margin-bottom:6px}
+.my-post-stats{display:flex;gap:10px;font-size:11px}
+.my-stat{display:flex;align-items:center;gap:3px;color:#666}
+.profile-tabs{display:flex;border-bottom:2px solid #f0f0f0;margin-bottom:20px}
+.profile-tab{flex:1;padding:12px;border:none;background:transparent;font-family:inherit;font-size:13px;font-weight:600;color:#aaa;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s}
+.profile-tab.on{color:#1a1a1a;border-bottom-color:#1a1a1a}
+.fav-empty{text-align:center;padding:40px 20px;color:#aaa}
+.fav-empty-icon{font-size:40px;margin-bottom:12px}
+.fav-empty-text{font-size:14px}
+
+/* PREVIEW */
+.prev-card{background:#f7f7f7;border-radius:8px;padding:18px;margin-bottom:14px;border:1px solid #eee}
+.back-lnk{background:none;border:none;font-family:inherit;font-size:14px;color:#aaa;cursor:pointer;padding:0;margin-bottom:18px;display:flex;align-items:center;gap:6px}
+.note-box{background:#fffbeb;border-radius:6px;padding:10px 14px;font-size:12px;color:#7d5a00;margin-bottom:18px}
+
+/* SHARE MODAL */
+.share-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:800;align-items:center;justify-content:center;padding:20px}
+.share-bg.open{display:flex}
+.share-box{background:#fff;border-radius:16px;max-width:500px;width:100%;padding:28px;max-height:90vh;overflow-y:auto}
+.share-socials{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.s-btn{display:flex;align-items:center;gap:10px;padding:13px 16px;border:none;border-radius:8px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer;color:#fff}
+
+/* REPORT MODAL */
+.report-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:800;align-items:center;justify-content:center;padding:20px}
+.report-bg.open{display:flex}
+.report-box{background:#fff;border-radius:8px;max-width:420px;width:100%;padding:28px}
+.report-title{font-weight:900;font-size:18px;margin-bottom:8px;color:#cc0000}
+.report-sub{font-size:13px;color:#666;margin-bottom:18px;line-height:1.55}
+.report-opts{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.report-opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1.5px solid #eee;border-radius:6px;cursor:pointer;font-size:14px}
+.report-opt:hover{border-color:#cc0000}
+.report-opt input{accent-color:#cc0000;width:16px;height:16px}
+.report-btns{display:flex;gap:10px}
+.report-submit{flex:2;padding:12px;background:#cc0000;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:900;font-size:14px;cursor:pointer}
+.report-cancel{flex:1;padding:12px;background:#fff;color:#1a1a1a;border:1.5px solid #ddd;border-radius:6px;font-family:inherit;font-weight:600;font-size:14px;cursor:pointer}
+
+/* ABOUT PAGE */
+.about-page{max-width:760px;margin:0 auto;padding:48px 28px 80px}
+.about-hero{text-align:center;margin-bottom:48px}
+.about-hero h1{font-weight:900;font-size:32px;letter-spacing:-.5px;margin-bottom:12px}
+.about-hero p{font-size:16px;color:#666;line-height:1.7;max-width:520px;margin:0 auto}
+.about-section{margin-bottom:36px;padding-bottom:36px;border-bottom:1px solid #f0f0f0}
+.about-section:last-child{border-bottom:none}
+.about-section h2{font-weight:900;font-size:18px;margin-bottom:14px;letter-spacing:-.2px}
+.about-section p,.about-section li{font-size:14px;color:#555;line-height:1.8;margin-bottom:10px}
+.about-section ul,.about-section ol{padding-left:20px}
+.legal-notice{background:#f7f7f7;border-radius:8px;padding:20px 24px;border-left:4px solid #1a1a1a;margin-bottom:16px}
+.legal-notice p{font-size:13px;color:#555;line-height:1.75;margin-bottom:8px}
+.legal-notice p:last-child{margin-bottom:0}
+.legal-badge{display:inline-block;background:#1a1a1a;color:#fff;padding:4px 12px;border-radius:4px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;padding:12px 24px;border-radius:6px;font-size:14px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+
+/* HIDDEN DOWNLOAD CANVAS */
+#dl-canvas{display:none}
+
+/* RESPONSIVE */
+@media(max-width:780px){
+  nav{padding:0 12px;gap:8px}
+  .logo{font-size:15px}
+  .cats{display:none}
+  .cat-mobile{display:block}
+  .loc{max-width:100px;font-size:12px}
+  .post-btn{padding:8px 12px;font-size:12px}
+  .about-nav-btn{font-size:12px;padding:4px 6px}
+}
+@media(max-width:480px){
+  .m-info{grid-template-columns:1fr}
+  .m-btns{flex-direction:column}
+  .share-socials{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo" id="logo">The Notice Board</div>
+  <button class="about-nav-btn" onclick="showAbout()">About</button>
+  <div class="cats" id="cats"></div>
+  <select class="cat-mobile" id="cat-mobile" onchange="setCat(this.value)"></select>
+  <div class="nav-r">
+    <input class="srch-inp" id="srch" placeholder="Search..." oninput="doSearch()" style="display:none">
+    <button class="srch-btn" onclick="toggleSearch()">&#9906;</button>
+    <select class="loc" id="loc-sel" onchange="renderGrid()">
+      <option value="">All Cape Town</option>
+      <option>Within 5km</option><option>Within 10km</option><option>Within 30km</option>
+      <optgroup label="Suburbs">
+        <option>Athlone</option><option>Bellville</option><option>Bergvliet</option><option>Bloubergstrand</option><option>Bo-Kaap</option><option>Brackenfell</option><option>Camps Bay</option><option>Cape Town CBD</option><option>Century City</option><option>Claremont</option><option>Clifton</option><option>Constantia</option><option>Crawford</option><option>De Waterkant</option><option>Durbanville</option><option>Edgemead</option><option>Elsies River</option><option>Fish Hoek</option><option>Fresnaye</option><option>Gardens</option><option>Glencairn</option><option>Gordon's Bay</option><option>Green Point</option><option>Grassy Park</option><option>Gugulethu</option><option>Hanover Park</option><option>Hout Bay</option><option>Kalk Bay</option><option>Kenilworth</option><option>Khayelitsha</option><option>Killarney Gardens</option><option>Kommetjie</option><option>Kraaifontein</option><option>Kuils River</option><option>Langa</option><option>Lansdowne</option><option>Lavender Hill</option><option>Lotus River</option><option>Melkbosstrand</option><option>Milnerton</option><option>Mitchell's Plain</option><option>Montague Gardens</option><option>Muizenberg</option><option>Newlands</option><option>Noordhoek</option><option>Observatory</option><option>Oranjezicht</option><option>Paarden Eiland</option><option>Parow</option><option>Pinelands</option><option>Plumstead</option><option>Retreat</option><option>Rondebosch</option><option>Rosebank</option><option>Salt River</option><option>Sea Point</option><option>Simon's Town</option><option>Somerset West</option><option>Southfield</option><option>Stellenbosch</option><option>Strand</option><option>Sunningdale</option><option>Sunridge</option><option>Table View</option><option>Tamboerskloof</option><option>Tokai</option><option>Vredehoek</option><option>Walmer Estate</option><option>V&amp;A Waterfront</option><option>Westlake</option><option>Woodstock</option><option>Wynberg</option><option>Zonnebloem</option>
+      </optgroup>
+    </select>
+    <button class="post-btn" id="post-nav-btn">&#8853; POST</button>
+    <button class="user-btn" id="profile-nav-btn" title="My Profile">A</button>
+  </div>
+</nav>
+
+<div id="main-content">
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="modal-bg" id="mbg">
+  <div class="modal-box" id="modal-box">
+    <button class="modal-close" id="modal-close-btn">&#10005;</button>
+    <div class="carousel" id="modal-carousel">
+      <div class="car-track" id="car-track"></div>
+      <button class="car-prev" id="car-prev">&#8249;</button>
+      <button class="car-next" id="car-next">&#8250;</button>
+      <div class="car-dots" id="car-dots"></div>
+      <div class="car-counter" id="car-counter"></div>
+      <div class="car-stats" id="car-stats"></div>
+    </div>
+    <div class="modal-body">
+      <div id="m-price"></div>
+      <div><div class="m-badge" id="m-badge"></div></div>
+      <div class="m-title" id="m-title"></div>
+      <div class="m-desc" id="m-desc"></div>
+      <div class="m-info">
+        <div><div class="m-lbl">Posted by</div><div class="m-val" id="m-author"></div></div>
+        <div><div class="m-lbl">Location</div><div class="m-val" id="m-suburb"></div></div>
+        <div><div class="m-lbl">Date</div><div class="m-val" id="m-date"></div></div>
+        <div><div class="m-lbl">Contact</div><div class="m-val" id="m-contact"></div></div>
+      </div>
+      <div class="m-tags" id="m-tags"></div>
+      <div class="m-stats" id="m-stats"></div>
+      <div class="m-btns">
+        <button class="m-btn-p" id="m-contact-btn">CONTACT NOW</button>
+        <button class="m-btn-g" id="m-share-btn">&#8679; SHARE</button>
+        <button class="m-btn-r" id="m-report-btn">REPORT</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" onclick="closeLightbox()">&#10005;</button>
+  <img class="lb-img" id="lb-img" src="" alt="" onclick="closeLightbox()">
+  <button class="lb-save" id="lb-save-btn">&#8681; Save to Device</button>
+</div>
+
+<!-- SHARE MODAL -->
+<div class="share-bg" id="share-bg">
+  <div class="share-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div style="font-weight:900;font-size:18px">Share this Notice</div>
+      <button onclick="closeShare()" style="background:none;border:none;font-size:22px;cursor:pointer;color:#aaa;line-height:1;padding:4px">&#10005;</button>
+    </div>
+    <div id="share-post-title" style="font-size:13px;color:#888;margin-bottom:20px;line-height:1.4"></div>
+    <div class="share-socials">
+      <button class="s-btn" style="background:#25D366" onclick="shareToWhatsApp()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        WhatsApp
+      </button>
+      <button class="s-btn" style="background:#1877F2" onclick="shareToFacebook()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+        Facebook
+      </button>
+      <button class="s-btn" style="background:#000" onclick="shareToX()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        X (Twitter)
+      </button>
+      <button class="s-btn" style="background:#0088cc" onclick="shareToTelegram()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        Telegram
+      </button>
+      <button onclick="shareEmail()" style="display:flex;align-items:center;gap:10px;padding:13px 16px;background:#fff;color:#1a1a1a;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        Email
+      </button>
+      <button id="copy-link-btn" onclick="copyShareLink()" style="display:flex;align-items:center;gap:10px;padding:13px 16px;background:#fff;color:#1a1a1a;border:1.5px solid #ddd;border-radius:8px;font-family:inherit;font-weight:700;font-size:14px;cursor:pointer">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1a1a1a" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Copy Link
+      </button>
+    </div>
+    <div style="border-top:1px solid #f0f0f0;padding-top:16px">
+      <div style="font-size:12px;color:#aaa;text-transform:uppercase;letter-spacing:.6px;font-weight:700;margin-bottom:10px">Save to Device</div>
+      <button onclick="downloadFullCard()" style="display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px;background:#1a1a1a;color:#fff;border:none;border-radius:8px;font-family:inherit;font-weight:900;font-size:14px;cursor:pointer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download Full Post (Photo + Info)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- REPORT MODAL -->
+<div class="report-bg" id="report-bg">
+  <div class="report-box">
+    <div class="report-title">&#9888; Report this Notice</div>
+    <div class="report-sub">Help keep The Notice Board safe. Select a reason and we'll notify our admin via WhatsApp immediately.</div>
+    <div class="report-opts">
+      <label class="report-opt"><input type="radio" name="rr" value="Spam or false advertising"> Spam or false advertising</label>
+      <label class="report-opt"><input type="radio" name="rr" value="Inappropriate or offensive content"> Inappropriate or offensive content</label>
+      <label class="report-opt"><input type="radio" name="rr" value="Pornographic content"> Pornographic content</label>
+      <label class="report-opt"><input type="radio" name="rr" value="Scam or fraud"> Scam or fraud</label>
+      <label class="report-opt"><input type="radio" name="rr" value="Other"> Other</label>
+    </div>
+    <div class="report-btns">
+      <button class="report-cancel" onclick="closeReport()">Cancel</button>
+      <button class="report-submit" onclick="submitReport()">Send Report</button>
+    </div>
+  </div>
+</div>
+
+<!-- SIDE PANEL -->
+<div class="panel-bg" id="panel-bg"></div>
+<div class="panel" id="panel">
+  <div class="ph">
+    <div class="ph-title" id="ph-title"></div>
+    <button class="ph-close" id="ph-close">&#10005;</button>
+  </div>
+  <div id="pb"></div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- HIDDEN CANVAS FOR DOWNLOAD -->
+<canvas id="dl-canvas"></canvas>
+
+<script>
+var CATS=["All","Healing","Events","Markets","Workshops","Services","Jobs","Housing","Pets","Wanted","Community","Classifieds"];
+var BADGE={Events:{bg:"#FFF0EB",c:"#C8380A"},Markets:{bg:"#E8F5EE",c:"#2A6840"},Workshops:{bg:"#F3EAFF",c:"#5B2A8B"},Services:{bg:"#E6F0FF",c:"#0A52A8"},Jobs:{bg:"#FFF3E0",c:"#8A4500"},Housing:{bg:"#E0F4FF",c:"#006689"},Pets:{bg:"#FFF5EB",c:"#C85800"},Wanted:{bg:"#F5EDE8",c:"#5C3D2A"},Community:{bg:"#EAF7EE",c:"#1B6B2A"},Classifieds:{bg:"#FFE8F4",c:"#9C1060"},Healing:{bg:"#F5EAFF",c:"#5A1A7A"}};
+var FLYER_COLORS=["#C8380A","#2A6840","#5B2A8B","#0A52A8","#8A4500","#006689","#C85800","#9C1060","#5A1A7A","#1B6B2A","#1a1a1a","#D84315"];
+var SUBURBS=["Athlone","Bellville","Bergvliet","Bloubergstrand","Bo-Kaap","Brackenfell","Camps Bay","Cape Town CBD","Century City","Claremont","Clifton","Constantia","Crawford","De Waterkant","Durbanville","Edgemead","Elsies River","Fish Hoek","Fresnaye","Gardens","Glencairn","Gordon's Bay","Green Point","Grassy Park","Gugulethu","Hanover Park","Hout Bay","Kalk Bay","Kenilworth","Khayelitsha","Killarney Gardens","Kommetjie","Kraaifontein","Kuils River","Langa","Lansdowne","Lavender Hill","Lotus River","Melkbosstrand","Milnerton","Mitchell's Plain","Montague Gardens","Muizenberg","Newlands","Noordhoek","Observatory","Oranjezicht","Paarden Eiland","Parow","Pinelands","Plumstead","Retreat","Rondebosch","Rosebank","Salt River","Sea Point","Simon's Town","Somerset West","Southfield","Stellenbosch","Strand","Sunningdale","Sunridge","Table View","Tamboerskloof","Tokai","Vredehoek","Walmer Estate","V&A Waterfront","Westlake","Woodstock","Wynberg","Zonnebloem"];
+
+var POSTS=[
+  {id:1,cat:"Events",title:"Sunset Jazz at Kalk Bay Harbour",suburb:"Kalk Bay",date:"25 Apr",author:"Cape Jazz Collective",contact:"events@capejazz.co.za",price:null,tags:["jazz","live music","sunset"],desc:"An evening of live jazz overlooking the ocean. Bring a blanket and a friend. Food stalls and cash bar available on the night.",imgs:["https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80","https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800&q=80"],isFlyer:false,views:142,likes:38},
+  {id:2,cat:"Workshops",title:"EFT Tapping for Anxiety",suburb:"Sea Point",date:"3 May",author:"Cape Wellness Studio",contact:"wellness@cws.co.za",price:"R350",tags:["EFT","wellness"],desc:"Learn EFT to clear stress and emotional blocks. Beginner-friendly. Workbook included. Limited to 12 participants.",imgs:["https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&q=80"],isFlyer:false,views:89,likes:22},
+  {id:3,cat:"Events",title:"Pop-Up Vinyl Market — Woodstock",suburb:"Woodstock",date:"20 Apr",author:"The Vinyl Collective",contact:"vinyl@collective.co.za",price:null,tags:["vinyl","music","records"],desc:"100+ crates of vinyl. Jazz, funk, soul, afrobeat and more. Coffee truck on site. Free entry. Bring cash.",imgs:["https://images.unsplash.com/photo-1461360228754-6e81c478b882?w=800&q=80"],isFlyer:false,views:267,likes:71},
+  {id:4,cat:"Pets",title:"Dog Walker — Hout Bay Forest",suburb:"Hout Bay",date:"Now",author:"Paws & Trails",contact:"074 321 9988",price:"R120/walk",tags:["dog walker","pets"],desc:"Loving dog walker available Mon–Fri. Group walks in Hout Bay forest. First walk free. GPS tracking shared with owners.",imgs:["https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=80","https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=80"],isFlyer:false,views:54,likes:19},
+  {id:5,cat:"Healing",title:"Reiki & Sound Bath Journey",suburb:"Woodstock",date:"19 Apr",author:"Serena Light",contact:"serena@lightworks.co.za",price:null,tags:["reiki","sound bath","meditation"],desc:"A deeply restorative evening of Reiki healing and crystal singing bowls. Restore your energy, release what no longer serves you.",imgs:["https://images.unsplash.com/photo-1545205597-3d9d02c29597?w=800&q=80"],isFlyer:false,views:198,likes:55},
+  {id:6,cat:"Markets",title:"Oranjezicht City Farm Market",suburb:"Gardens",date:"Every Sat",author:"OZCF Market",contact:"info@ozcf.co.za",price:null,tags:["market","organic","food"],desc:"Every Saturday! Fresh produce, artisan foods, handcrafted goods. Support local farmers right in the heart of Cape Town.",imgs:["https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=800&q=80","https://images.unsplash.com/photo-1542838132-92c53300491e?w=800&q=80"],isFlyer:false,views:312,likes:89},
+  {id:7,cat:"Jobs",title:"Video Editor Wanted — Part Time",suburb:"Cape Town CBD",date:"2 days ago",author:"Studio Kite",contact:"hello@studiokite.co.za",price:null,tags:["video editing","creative"],desc:"Small Cape Town creative agency seeking a part-time video editor. Premiere Pro and After Effects essential. Portfolio required.",imgs:["https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800&q=80"],isFlyer:false,views:77,likes:14},
+  {id:8,cat:"Housing",title:"Sunny Garden Cottage To Let",suburb:"Newlands",date:"Avail 1 May",author:"Trudy van Wyk",contact:"trudy@gmail.com",price:"R8,500/pm",tags:["cottage","to let","furnished"],desc:"1-bed garden cottage in quiet Newlands. Fully furnished, WiFi, laundry, own entrance. Non-smoker preferred.",imgs:["https://images.unsplash.com/photo-1416331108676-a22ccb276e35?w=800&q=80","https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?w=800&q=80"],isFlyer:false,views:445,likes:67},
+  {id:9,cat:"Services",title:"Handyman — All Repairs & Renos",suburb:"Plumstead",date:"Now",author:"Fix It Fast CT",contact:"074 321 6543",price:"R350/hr",tags:["handyman","repairs"],desc:"Reliable handyman for plumbing, tiling, painting and carpentry. Free quotes. References available. Southern Suburbs.",imgs:["https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=800&q=80"],isFlyer:false,views:123,likes:31},
+  {id:10,cat:"Classifieds",title:"Granny Mae's Famous Milk Tart",suburb:"Wynberg",date:"Today",author:"Mae Hendricks",contact:"082 456 7890",price:"From R45",tags:["baking","milktart","homemade"],desc:"Freshly baked to order! Cape Malay milk tart and koeksisters. Min 24hr notice. Delivery available in Wynberg.",imgs:["https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=800&q=80"],isFlyer:false,views:88,likes:42},
+  {id:11,cat:"Community",title:"Beach Clean-Up — Muizenberg",suburb:"Muizenberg",date:"27 Apr",author:"Clean Shores CT",contact:"cleanshoresca@gmail.com",price:null,tags:["volunteer","beach"],desc:"Monthly beach clean. Gloves and bags provided. Bring the kids — prize for the most creative find.",imgs:["https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&q=80"],isFlyer:false,views:201,likes:88},
+  {id:12,cat:"Healing",title:"Full Moon Breathwork Ceremony",suburb:"Constantia",date:"12 May",author:"Breath & Being",contact:"breathandbeing@gmail.com",price:"R280",tags:["breathwork","full moon"],desc:"Guided conscious connected breathwork under the full moon. Release, transform and expand. Held outdoors. BYO mat.",imgs:["https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=800&q=80"],isFlyer:false,views:166,likes:49},
+  {id:13,cat:"Markets",title:"Hout Bay Harbour Market",suburb:"Hout Bay",date:"Every Sun",author:"Harbour Market",contact:"info@harbourmarket.co.za",price:null,tags:["market","food","crafts"],desc:"Every Sunday at the harbour. Fresh fish, craft beer, handmade goods. Live music all morning. Rain or shine.",imgs:["https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&q=80"],isFlyer:false,views:289,likes:76},
+  {id:14,cat:"Workshops",title:"Kombucha & Fermentation Workshop",suburb:"Observatory",date:"6 May",author:"Wild Ferment Co",contact:"wild@ferment.co.za",price:"R420",tags:["kombucha","fermentation"],desc:"Brew your own kombucha, kefir and kimchi. Tastings included. Take home your first SCOBY. Limited spots.",imgs:["https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=800&q=80"],isFlyer:false,views:67,likes:21},
+  {id:15,cat:"Services",title:"Event Photography — Cape Town",suburb:"Sea Point",date:"Now",author:"Lens & Light Studio",contact:"073 881 2244",price:"R2,500/day",tags:["photography","events"],desc:"Experienced photographer for weddings, corporate events and portraits. Full editing included. Enquire now.",imgs:["https://images.unsplash.com/photo-1542038784456-1ea8e935640e?w=800&q=80"],isFlyer:false,views:178,likes:43},
+  {id:16,cat:"Jobs",title:"Graphic Designer — Freelance",suburb:"Cape Town CBD",date:"3 days ago",author:"Brand & Co",contact:"careers@brandco.co.za",price:null,tags:["design","freelance","brand"],desc:"Award-winning brand studio seeking a freelance graphic designer. Print and digital. Portfolio essential.",imgs:["https://images.unsplash.com/photo-1561070791-2526d30994b5?w=800&q=80"],isFlyer:false,views:95,likes:18},
+];
+
+// My posts (first 3 belong to profile user for demo)
+var MY_POST_IDS=[1,5,12];
+var likedPosts={};
+var favPosts={};
+
+// ── PROFILE (localStorage) ─────────────────────────────
+var profile={name:"Alex Botha",email:"alex@thenoticeboard.co.za",phone:"",suburb:"",avatar:"",bio:""};
+function loadProfile(){
+  try{var s=localStorage.getItem("tnb_profile");if(s)Object.assign(profile,JSON.parse(s));}catch(e){}
+  updateNavAvatar();
+}
+function saveProfile(){
+  try{localStorage.setItem("tnb_profile",JSON.stringify(profile));}catch(e){}
+  updateNavAvatar();showToast("Profile saved!");
+}
+function updateNavAvatar(){
+  var btn=document.getElementById("profile-nav-btn");
+  if(profile.avatar){btn.innerHTML='<img src="'+profile.avatar+'" alt="Profile">';}
+  else{btn.textContent=(profile.name||"A")[0].toUpperCase();btn.style.background="#1a1a1a";btn.style.color="#fff";}
+}
+
+var activeCat="All",searchVal="",showSearch=false,currentPost=null;
+var uploadedImgs=[],draft={},showPrev=false,aiMode=false,aiFlyerHtml="",aiFlyerApproved=false;
+
+// ── INIT ───────────────────────────────────────────────
+loadProfile();
+loadFavs();
+buildCats();
+buildMobileCats();
+renderGrid();
+
+// ── EVENTS ─────────────────────────────────────────────
+document.getElementById("logo").onclick=function(){
+  activeCat="All";searchVal="";
+  var s=document.getElementById("srch");s.value="";s.style.display="none";showSearch=false;
+  buildCats();buildMobileCats();renderGrid();
+  document.getElementById("main-content").innerHTML='<div class="grid" id="grid"></div>';
+  renderGrid();
+  window.scrollTo({top:0,behavior:"smooth"});
+};
+document.getElementById("post-nav-btn").onclick=openPost;
+document.getElementById("profile-nav-btn").onclick=openProfile;
+document.getElementById("panel-bg").onclick=closePanel;
+document.getElementById("ph-close").onclick=closePanel;
+document.getElementById("modal-close-btn").onclick=closeModal;
+document.getElementById("mbg").onclick=function(e){if(e.target===this)closeModal();};
+document.getElementById("car-prev").onclick=function(){carGo(-1);};
+document.getElementById("car-next").onclick=function(){carGo(1);};
+document.getElementById("m-share-btn").onclick=sharePost;
+document.getElementById("m-report-btn").onclick=openReport;
+document.getElementById("m-contact-btn").onclick=function(){if(currentPost&&currentPost.contact)window.location.href="mailto:"+currentPost.contact.split("|")[0].trim();};
+document.getElementById("report-bg").onclick=function(e){if(e.target===this)closeReport();};
+document.getElementById("share-bg").onclick=function(e){if(e.target===this)closeShare();};
+
+// ── TOAST ──────────────────────────────────────────────
+function showToast(msg){
+  var t=document.getElementById("toast");
+  t.textContent=msg;t.classList.add("show");
+  setTimeout(function(){t.classList.remove("show");},2500);
+}
+
+// ── CATS ───────────────────────────────────────────────
+function buildCats(){
+  document.getElementById("cats").innerHTML=CATS.map(function(c){
+    return '<button class="cat'+(activeCat===c?" on":"")+'" onclick="setCat(\''+c+'\')">'+c+'</button>';
+  }).join("");
+}
+function buildMobileCats(){
+  var sel=document.getElementById("cat-mobile");
+  sel.innerHTML=CATS.map(function(c){return '<option'+(activeCat===c?" selected":"")+'>'+c+'</option>';}).join("");
+}
+function setCat(c){activeCat=c;buildCats();buildMobileCats();renderGrid();}
+function doSearch(){searchVal=document.getElementById("srch").value.toLowerCase();renderGrid();}
+function toggleSearch(){
+  showSearch=!showSearch;
+  var s=document.getElementById("srch");
+  s.style.display=showSearch?"block":"none";
+  if(showSearch)s.focus();else{searchVal="";s.value="";renderGrid();}
+}
+
+// ── GRID ───────────────────────────────────────────────
+function renderGrid(){
+  var mc=document.getElementById("main-content");
+  if(!mc||!document.getElementById("grid")){
+    mc=document.getElementById("main-content");
+    mc.innerHTML='<div class="grid" id="grid"></div>';
+  }
+  var locFilter=document.getElementById("loc-sel").value;
+  var posts=POSTS.filter(function(p){
+    var matchCat=activeCat==="All"||p.cat===activeCat;
+    var matchSearch=!searchVal||[p.title,p.desc].concat(p.tags).join(" ").toLowerCase().indexOf(searchVal)>=0;
+    var matchLoc=!locFilter||locFilter===""||locFilter==="All Cape Town"||locFilter==="Within 5km"||locFilter==="Within 10km"||locFilter==="Within 30km"||locFilter===p.suburb;
+    return matchCat&&matchSearch&&matchLoc;
+  });
+  var NC=5,cols=[];for(var i=0;i<NC;i++)cols.push([]);
+  posts.forEach(function(p,i){cols[i%NC].push(p);});
+  var grid=document.getElementById("grid");
+  if(!grid)return;
+  if(!posts.length){grid.innerHTML='<div style="grid-column:1/-1;padding:80px;text-align:center;color:#aaa;font-size:14px">No notices found</div>';return;}
+  grid.innerHTML=cols.map(function(col){
+    return '<div class="col">'+col.map(function(p){
+      var liked=likedPosts[p.id];
+      var faved=favPosts[p.id];
+      var likeBadge='<button class="like-badge'+(liked?" liked":"")+'" onclick="toggleLike(event,'+p.id+')">&#9829; '+(p.likes||0)+'</button>';
+      var favBadge='<button class="fav-badge'+(faved?" faved":"")+'" onclick="toggleFav(event,'+p.id+')" title="'+(faved?"Remove from favourites":"Save to favourites")+'">'+(faved?"★":"☆")+'</button>';
+      if(p.isFlyer){
+        var fc=FLYER_COLORS[p.id%FLYER_COLORS.length];
+        return '<div class="item flyer-card" onclick="openModal('+p.id+')" style="position:relative">'+
+          '<div class="flyer-inner" style="background:'+fc+'">'+
+          '<div class="flyer-cat">'+p.cat+'</div>'+
+          '<div class="flyer-title">'+p.title+'</div>'+
+          (p.price?'<div class="flyer-price">'+p.price+'</div>':'')+
+          '<div class="flyer-meta">&#128205; '+p.suburb+' &middot; '+p.date+'</div>'+
+          '</div>'+favBadge+likeBadge+'</div>';
+      }
+      return '<div class="item" onclick="openModal('+p.id+')" style="position:relative">'+
+        '<img src="'+p.imgs[0]+'" alt="'+p.title+'" loading="lazy">'+
+        '<div class="overlay"><div class="ov-inner">'+
+        '<div class="ov-badge">'+p.cat+'</div>'+
+        '<div class="ov-title">'+p.title+'</div>'+
+        '<div class="ov-meta">&#128205; '+p.suburb+' &middot; '+p.date+'</div>'+
+        (p.price?'<div class="ov-price">'+p.price+'</div>':'')+
+        '</div></div>'+favBadge+likeBadge+'</div>';
+    }).join('')+'</div>';
+  }).join("");
+}
+
+function toggleLike(e,id){
+  e.stopPropagation();
+  var p=POSTS.find(function(x){return x.id===id;});if(!p)return;
+  if(likedPosts[id]){p.likes=Math.max(0,(p.likes||0)-1);delete likedPosts[id];}
+  else{p.likes=(p.likes||0)+1;likedPosts[id]=true;}
+  renderGrid();
+}
+function toggleFav(e,id){
+  e.stopPropagation();
+  var p=POSTS.find(function(x){return x.id===id;});if(!p)return;
+  if(favPosts[id]){delete favPosts[id];showToast("Removed from favourites");}
+  else{favPosts[id]=true;showToast("★ Saved to favourites!");}
+  saveFavs();
+  renderGrid();
+}
+function saveFavs(){try{localStorage.setItem("tnb_favs",JSON.stringify(favPosts));}catch(e){}}
+function loadFavs(){try{var s=localStorage.getItem("tnb_favs");if(s)favPosts=JSON.parse(s);}catch(e){}}
+
+// ── MODAL ──────────────────────────────────────────────
+var carIdx=0,carImgs=[];
+function openModal(id){
+  var p=POSTS.find(function(x){return x.id===id;});if(!p)return;
+  currentPost=p;
+  p.views=(p.views||0)+1;
+  var b=BADGE[p.cat]||{bg:"#f0f0f0",c:"#333"};
+  carImgs=p.imgs;carIdx=0;
+  buildCarousel();
+  document.getElementById("m-price").innerHTML=p.price?'<div class="m-price">'+p.price+'</div>':"";
+  var badge=document.getElementById("m-badge");badge.textContent=p.cat;badge.style.background=b.bg;badge.style.color=b.c;
+  document.getElementById("m-title").textContent=p.title;
+  document.getElementById("m-desc").textContent=p.desc;
+  document.getElementById("m-author").textContent=p.author;
+  document.getElementById("m-suburb").textContent=p.suburb;
+  document.getElementById("m-date").textContent=p.date;
+  document.getElementById("m-contact").textContent=p.contact;
+  document.getElementById("m-tags").innerHTML=p.tags.map(function(t){return '<span class="m-tag">#'+t+'</span>';}).join("");
+  document.getElementById("m-stats").innerHTML='';
+  var carStats=document.getElementById("car-stats");
+  if(carStats){
+    var faved=favPosts[p.id];
+    carStats.innerHTML=
+      '<div class="car-stat-pill">&#128065; '+(p.views||0)+' views</div>'+
+      '<div class="car-stat-pill">&#9829; '+(p.likes||0)+' likes</div>'+
+      '<button class="car-stat-pill car-fav-pill" id="car-fav-pill" onclick="toggleFavFromModal()" style="border:none;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">'+
+        (faved?'★ Saved':'☆ Favourite')+
+      '</button>';
+  }
+  updateModalFavBtn(p.id);
+  document.getElementById("mbg").classList.add("open");
+}
+function buildCarousel(){
+  var track=document.getElementById("car-track");
+  track.innerHTML=carImgs.map(function(s,i){
+    return '<div class="car-slide" onclick="openLightbox(\''+s+'\')"><img src="'+s+'" alt="Image '+(i+1)+'"></div>';
+  }).join("");
+  document.getElementById("car-dots").innerHTML=carImgs.length>1?carImgs.map(function(_,i){
+    return '<button class="car-dot'+(i===0?" on":"")+'"></button>';
+  }).join(""):"";
+  document.getElementById("car-prev").style.display=carImgs.length>1?"flex":"none";
+  document.getElementById("car-next").style.display=carImgs.length>1?"flex":"none";
+  document.getElementById("car-dots").querySelectorAll("button").forEach(function(d,i){d.onclick=function(){carIdx=i;updateCar();};});
+  updateCar();
+}
+function carGo(dir){carIdx=Math.max(0,Math.min(carImgs.length-1,carIdx+dir));updateCar();}
+function updateCar(){
+  document.getElementById("car-track").style.transform="translateX(-"+carIdx*100+"%)";
+  document.getElementById("car-counter").textContent=carImgs.length>1?(carIdx+1)+" / "+carImgs.length:"";
+  document.getElementById("car-dots").querySelectorAll("button").forEach(function(d,i){d.className="car-dot"+(i===carIdx?" on":"");});
+}
+function saveCurrentPhoto(){
+  if(!carImgs.length)return;
+  var a=document.createElement("a");a.href=carImgs[carIdx];a.download="notice.jpg";a.target="_blank";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+}
+function updateModalFavBtn(id){
+  var pill=document.getElementById("car-fav-pill");
+  if(!pill)return;
+  var faved=favPosts[id];
+  pill.textContent=faved?"★ Saved":"☆ Favourite";
+  pill.style.background=faved?"rgba(255,180,0,.85)":"rgba(0,0,0,.5)";
+  pill.style.color="#fff";
+}
+function toggleFavFromModal(){
+  if(!currentPost)return;
+  toggleFav({stopPropagation:function(){}},currentPost.id);
+  updateModalFavBtn(currentPost.id);
+}
+function closeModal(){document.getElementById("mbg").classList.remove("open");currentPost=null;}
+
+// ── LIGHTBOX ───────────────────────────────────────────
+function openLightbox(src){
+  document.getElementById("lb-img").src=src;
+  document.getElementById("lightbox").classList.add("open");
+  document.getElementById("lb-save-btn").onclick=function(){
+    var a=document.createElement("a");a.href=src;a.download="local-board-notice.jpg";a.target="_blank";
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  };
+}
+function closeLightbox(){document.getElementById("lightbox").classList.remove("open");}
+
+// ── DOWNLOAD FULL CARD ─────────────────────────────────
+function downloadFullCard(){
+  if(!currentPost){showToast("No post selected.");return;}
+  var p=currentPost;
+  var b=BADGE[p.cat]||{bg:"#f0f0f0",c:"#333"};
+  var W=750;
+  var IMG_H=440;
+  var PAD=32;
+  var INFO_H=300;
+  var H=IMG_H+INFO_H;
+
+  var canvas=document.getElementById("dl-canvas");
+  canvas.width=W; canvas.height=H;
+  var ctx=canvas.getContext("2d");
+
+  function wrapText(ctx,text,x,y,maxW,lineH){
+    var words=text.split(" "),line="";
+    for(var i=0;i<words.length;i++){
+      var test=line?line+" "+words[i]:words[i];
+      if(ctx.measureText(test).width>maxW&&line){ctx.fillText(line,x,y);line=words[i];y+=lineH;}
+      else line=test;
+    }
+    if(line)ctx.fillText(line,x,y);
+    return y;
+  }
+
+  function drawCard(){
+    // White info section
+    ctx.fillStyle="#ffffff";
+    ctx.fillRect(0,IMG_H,W,INFO_H);
+
+    var y=IMG_H+PAD;
+
+    // Price (large, bold, black - if present)
+    if(p.price){
+      ctx.fillStyle="#1a1a1a";
+      ctx.font="bold 32px Helvetica Neue,Arial,sans-serif";
+      ctx.fillText(p.price,PAD,y);
+      y+=44;
+    }
+
+    // Category badge (pill)
+    var badgeText=p.cat.toUpperCase();
+    ctx.font="bold 11px Helvetica Neue,Arial,sans-serif";
+    var badgeW=ctx.measureText(badgeText).width+20;
+    ctx.fillStyle=b.bg;
+    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(PAD,y,badgeW,24,3);else ctx.rect(PAD,y,badgeW,24);ctx.fill();
+    ctx.fillStyle=b.c;
+    ctx.fillText(badgeText,PAD+10,y+16);
+    y+=38;
+
+    // Title
+    ctx.fillStyle="#1a1a1a";
+    ctx.font="bold 26px Helvetica Neue,Arial,sans-serif";
+    var titleLines=[];
+    var titleWords=p.title.split(" "),tline="";
+    titleWords.forEach(function(w){var t=tline?tline+" "+w:w;if(ctx.measureText(t).width>W-PAD*2&&tline){titleLines.push(tline);tline=w;}else tline=t;});
+    if(tline)titleLines.push(tline);
+    titleLines.slice(0,2).forEach(function(l){ctx.fillText(l,PAD,y);y+=36;});
+    y+=4;
+
+    // Description
+    ctx.fillStyle="#555555";
+    ctx.font="16px Helvetica Neue,Arial,sans-serif";
+    var descTrunc=p.desc.length>200?p.desc.substring(0,197)+"...":p.desc;
+    wrapText(ctx,descTrunc,PAD,y,W-PAD*2,24);
+    y+=56;
+
+    // Info grid line
+    ctx.fillStyle="#f7f7f7";
+    ctx.fillRect(PAD,y,W-PAD*2,72);
+    if(ctx.roundRect){}
+
+    var col1=PAD+14, col2=W/2+14;
+    var row1=y+20, row2=y+50;
+    ctx.fillStyle="#aaaaaa";
+    ctx.font="10px Helvetica Neue,Arial,sans-serif";
+    ctx.fillText("POSTED BY",col1,row1);
+    ctx.fillText("LOCATION",col2,row1);
+    ctx.fillText("DATE",col1,row2+4);
+    ctx.fillText("CONTACT",col2,row2+4);
+
+    ctx.fillStyle="#1a1a1a";
+    ctx.font="bold 14px Helvetica Neue,Arial,sans-serif";
+    ctx.fillText(p.author,col1,row1+16);
+    ctx.fillText(p.suburb,col2,row1+16);
+    ctx.fillText(p.date,col1,row2+20);
+    ctx.fillText(p.contact,col2,row2+20);
+
+    // Footer branding
+    ctx.fillStyle="#dddddd";
+    ctx.fillRect(0,H-28,W,1);
+    ctx.fillStyle="#aaaaaa";
+    ctx.font="11px Helvetica Neue,Arial,sans-serif";
+    ctx.textAlign="right";
+    ctx.fillText("thenoticeboard.co.za",W-PAD,H-10);
+    ctx.textAlign="left";
+
+    // Export
+    canvas.toBlob(function(blob){
+      var url=URL.createObjectURL(blob);
+      var a=document.createElement("a");
+      a.href=url;a.download="notice-"+p.id+".png";
+      document.body.appendChild(a);a.click();document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Downloaded!");
+      closeShare();
+    },"image/png");
+  }
+
+  // Draw photo or coloured block on top
+  if(p.imgs&&p.imgs.length&&!p.isFlyer){
+    var img=new Image();img.crossOrigin="anonymous";
+    img.onload=function(){
+      // Cover crop
+      var iR=img.width/img.height, cR=W/IMG_H;
+      var sw,sh,sx,sy;
+      if(iR>cR){sh=img.height;sw=sh*cR;sx=(img.width-sw)/2;sy=0;}
+      else{sw=img.width;sh=sw/cR;sx=0;sy=(img.height-sh)/2;}
+      ctx.drawImage(img,sx,sy,sw,sh,0,0,W,IMG_H);
+      drawCard();
+    };
+    img.onerror=function(){
+      var fc=FLYER_COLORS[p.id%FLYER_COLORS.length];
+      ctx.fillStyle=fc;ctx.fillRect(0,0,W,IMG_H);
+      ctx.fillStyle="rgba(255,255,255,.15)";ctx.fillRect(0,0,W,IMG_H);
+      ctx.fillStyle="#fff";ctx.font="bold 26px Helvetica Neue,Arial,sans-serif";
+      ctx.textAlign="center";ctx.fillText(p.title,W/2,IMG_H/2);ctx.textAlign="left";
+      drawCard();
+    };
+    img.src=p.imgs[0];
+  } else {
+    var fc=FLYER_COLORS[p.id%FLYER_COLORS.length];
+    ctx.fillStyle=fc;ctx.fillRect(0,0,W,IMG_H);
+    ctx.fillStyle="#fff";ctx.font="bold 28px Helvetica Neue,Arial,sans-serif";
+    ctx.textAlign="center";
+    var tl=p.title.length>36?p.title.substring(0,33)+"...":p.title;
+    ctx.fillText(tl,W/2,IMG_H/2-10);
+    if(p.price){ctx.font="bold 20px Helvetica Neue,Arial,sans-serif";ctx.fillStyle="rgba(255,255,255,.8)";ctx.fillText(p.price,W/2,IMG_H/2+24);}
+    ctx.textAlign="left";
+    drawCard();
+  }
+}
+
+// ── SHARE ──────────────────────────────────────────────
+function sharePost(){
+  if(!currentPost)return;
+  document.getElementById("share-post-title").textContent=currentPost.title+" — "+currentPost.suburb;
+  document.getElementById("share-bg").classList.add("open");
+}
+function closeShare(){document.getElementById("share-bg").classList.remove("open");}
+function getShareText(){
+  if(!currentPost)return{url:window.location.href,text:""};
+  var text=currentPost.title+"\n📍 "+currentPost.suburb+(currentPost.price?" • "+currentPost.price:"")+"\n\n"+currentPost.desc+"\n\nVia The Notice Board — thenoticeboard.co.za";
+  return{url:window.location.href,text:text};
+}
+function shareToWhatsApp(){var d=getShareText();window.open("https://wa.me/?text="+encodeURIComponent(d.text+"\n"+d.url),"_blank");}
+function shareToFacebook(){var d=getShareText();window.open("https://www.facebook.com/sharer/sharer.php?u="+encodeURIComponent(d.url)+"&quote="+encodeURIComponent(currentPost.title),"_blank");}
+function shareToX(){var d=getShareText();window.open("https://twitter.com/intent/tweet?text="+encodeURIComponent(currentPost.title+" 📍 "+currentPost.suburb)+"&url="+encodeURIComponent(d.url),"_blank");}
+function shareToTelegram(){var d=getShareText();window.open("https://t.me/share/url?url="+encodeURIComponent(d.url)+"&text="+encodeURIComponent(currentPost.title+" 📍 "+currentPost.suburb),"_blank");}
+function shareEmail(){var d=getShareText();window.location.href="mailto:?subject="+encodeURIComponent(currentPost.title+" on The Notice Board")+"&body="+encodeURIComponent(d.text+"\n\n"+d.url);}
+function copyShareLink(){
+  var d=getShareText();
+  var btn=document.getElementById("copy-link-btn");
+  navigator.clipboard.writeText(d.url).then(function(){
+    btn.querySelector("svg").setAttribute("stroke","#2A6840");
+    btn.style.borderColor="#2A6840";btn.style.color="#2A6840";
+    btn.childNodes[1].textContent=" Copied!";
+    setTimeout(function(){btn.style.borderColor="#ddd";btn.style.color="#1a1a1a";btn.childNodes[1].textContent=" Copy Link";btn.querySelector("svg").setAttribute("stroke","#1a1a1a");},2000);
+  }).catch(function(){prompt("Copy this link:",d.url);});
+}
+
+// ── REPORT ─────────────────────────────────────────────
+function openReport(){document.getElementById("report-bg").classList.add("open");}
+function closeReport(){document.getElementById("report-bg").classList.remove("open");}
+function submitReport(){
+  var sel=document.querySelector('input[name="rr"]:checked');
+  if(!sel){alert("Please select a reason.");return;}
+  var msg="🚨 REPORT — The Notice Board\nPost: "+(currentPost?currentPost.title:"Unknown")+"\nSuburb: "+(currentPost?currentPost.suburb:"")+"\nReason: "+sel.value+"\nTime: "+new Date().toLocaleString();
+  window.open("https://wa.me/27765136622?text="+encodeURIComponent(msg),"_blank");
+  closeReport();showToast("Report sent to admin via WhatsApp.");
+}
+
+// ── PANEL ──────────────────────────────────────────────
+function openPanel(title,html){
+  document.getElementById("ph-title").textContent=title;
+  document.getElementById("pb").innerHTML=html;
+  document.getElementById("panel-bg").classList.add("open");
+  document.getElementById("panel").classList.add("open");
+}
+function closePanel(){
+  document.getElementById("panel-bg").classList.remove("open");
+  document.getElementById("panel").classList.remove("open");
+}
+
+// ── ABOUT PAGE ─────────────────────────────────────────
+function showAbout(){
+  document.getElementById("main-content").innerHTML=
+    '<div class="about-page">'+
+    '<div class="about-hero">'+
+      '<h1>The Notice Board</h1>'+
+      '<p>Cape Town\'s free community noticeboard — connecting locals with events, services, markets, opportunities and everything in between.</p>'+
+    '</div>'+
+
+    '<div class="about-section">'+
+      '<h2>About Us</h2>'+
+      '<p>The Notice Board is a free digital noticeboard for the Cape Town community. We believe in keeping things local, accessible and open. Whether you\'re hosting a yoga class in Sea Point, selling homemade koeksisters in Wynberg, or looking for a handyman in Plumstead — this is your board.</p>'+
+      '<p>This platform is operated by a group of passionate designers and builders who want your life to benefit by what we create... we are a proudly Cape Town based company of thinkers, feelers and makers. Find us at <a href="http://thenoticeboard.co.za" style="color:#1a1a1a;font-weight:700">thenoticeboard.co.za</a>.</p>'+
+    '</div>'+
+
+    '<div class="about-section">'+
+      '<div class="legal-badge">Legal Disclaimer</div>'+
+      '<h2>Platform Disclaimer & Terms of Use</h2>'+
+      '<div class="legal-notice">'+
+        '<p><strong>We are a platform only.</strong> The Notice Board is a free listing and discovery platform. We do not sell, supply, manufacture or provide any of the goods or services advertised on this platform. We are solely a technology service that enables members of the public to post and discover community notices.</p>'+
+        '<p><strong>No responsibility for transactions.</strong> The Notice Board accepts no responsibility, liability or obligation whatsoever for any transaction, exchange, agreement, sale, service, or interaction that occurs between users of this platform. All dealings between users are strictly between those parties alone.</p>'+
+        '<p><strong>No endorsement.</strong> The presence of any listing on The Notice Board does not constitute an endorsement, recommendation, or verification of the poster, their business, goods, services, or claims. We do not vet, verify, or validate any information posted by users.</p>'+
+      '</div>'+
+      '<div class="legal-notice">'+
+        '<p><strong>User responsibility.</strong> By using this platform, you agree that: (a) you are solely responsible for all content you post; (b) you will not post false, misleading, offensive, unlawful or defamatory content; (c) you will not post content that infringes the intellectual property rights of any third party; (d) you will not use this platform for any unlawful purpose.</p>'+
+        '<p><strong>No liability for loss.</strong> To the fullest extent permitted by applicable law, The Notice Board shall not be liable for any direct, indirect, incidental, special, consequential or punitive damages arising out of or relating to your use of this platform, including but not limited to financial loss, personal injury, or loss of data resulting from any transaction or interaction facilitated through this platform.</p>'+
+      '</div>'+
+      '<div class="legal-notice">'+
+        '<p><strong>Content removal.</strong> We reserve the right to remove any listing at any time, without notice, for any reason, including but not limited to listings that are reported as inappropriate, offensive, misleading, or in breach of these terms.</p>'+
+        '<p><strong>Third-party interactions.</strong> When you contact or transact with another user, you do so at your own risk. We strongly encourage users to exercise their own due diligence before entering into any agreement, transaction or exchange with another party found through this platform.</p>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="about-section">'+
+      '<div class="legal-badge">Privacy</div>'+
+      '<h2>Privacy & Data</h2>'+
+      '<div class="legal-notice">'+
+        '<p><strong>Your data.</strong> When you create a profile or post a notice, we collect the information you provide (name, email, phone, suburb). This information is stored locally on your device and used solely to facilitate your use of the platform.</p>'+
+        '<p><strong>Public information.</strong> Contact details you include in a notice are visible to all users. Please only include contact information you are comfortable sharing publicly.</p>'+
+        '<p><strong>No data selling.</strong> We do not sell, trade, or otherwise transfer your personal information to third parties. We do not run advertising or tracking programs.</p>'+
+        '<p><strong>POPIA compliance.</strong> This platform operates in compliance with the Protection of Personal Information Act (POPIA) of South Africa. You have the right to access, correct, or request deletion of your personal information at any time by contacting us at <a href="mailto:vidr.tech@gmail.com" style="color:#1a1a1a;font-weight:700">vidr.tech@gmail.com</a>.</p>'+
+      '</div>'+
+    '</div>'+
+
+    '<div class="about-section">'+
+      '<div class="legal-badge">Community Rules</div>'+
+      '<h2>Community Standards</h2>'+
+      '<ul>'+
+        '<li>Be honest. Only post genuine notices.</li>'+
+        '<li>No pornographic, violent or offensive content.</li>'+
+        '<li>No hate speech, discrimination or harassment of any kind.</li>'+
+        '<li>No spam, duplicate posts or misleading listings.</li>'+
+        '<li>No illegal goods or services.</li>'+
+        '<li>Respect other members of the community.</li>'+
+        '<li>Use the Report button if you see something that shouldn\'t be here.</li>'+
+      '</ul>'+
+      '<p style="margin-top:14px">Violations will result in immediate removal of content and may result in permanent suspension from the platform.</p>'+
+    '</div>'+
+
+    '<div class="about-section">'+
+      '<h2>Contact & Reporting</h2>'+
+      '<p>To report inappropriate content urgently, use the <strong>Report</strong> button on any post. Our admin will be notified immediately via WhatsApp.</p>'+
+      '<p>For all other enquiries: <a href="mailto:vidr.tech@gmail.com" style="color:#1a1a1a;font-weight:700">vidr.tech@gmail.com</a></p>'+
+      '<p>WhatsApp admin line: <a href="https://wa.me/27765136622" style="color:#1a1a1a;font-weight:700">076 513 6622</a></p>'+
+      '<p style="margin-top:18px;font-size:12px;color:#bbb">Last updated: April 2026. The Notice Board — Cape Town, South Africa.</p>'+
+    '</div>'+
+    '</div>';
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+// ── PROFILE ────────────────────────────────────────────
+function openProfile(){
+  var myPosts=POSTS.filter(function(p){return MY_POST_IDS.indexOf(p.id)>=0;});
+  var favIds=Object.keys(favPosts).filter(function(id){return favPosts[id];});
+  var favCount=favIds.length;
+  var favPostsList=POSTS.filter(function(p){return favPosts[p.id];});
+  var avatarHtml=profile.avatar
+    ?'<div class="avatar-img"><img src="'+profile.avatar+'" alt="Profile"></div>'
+    :'<div class="avatar-img">'+((profile.name||"A")[0].toUpperCase())+'</div>';
+  var myPostsHtml=myPosts.length
+    ?myPosts.map(function(p){return buildPostCardHtml(p,false);}).join("")
+    :'<div class="fav-empty"><div class="fav-empty-icon">📋</div><div class="fav-empty-text">No posts yet. Hit ⊕ POST to get started!</div></div>';
+
+  openPanel("My Profile",
+    '<div class="pf">'+
+    '<div class="essential-notice">&#128247; <strong>Photo, email and cell number</strong> are essential — they help the community connect with you and verify your posts.</div>'+
+    '<div class="avatar-wrap" onclick="document.getElementById(\'av-upload\').click()" title="Click to change photo">'+
+      avatarHtml+
+      '<div class="avatar-edit">&#9998;</div>'+
+    '</div>'+
+    '<input type="file" id="av-upload" style="display:none" accept="image/*" onchange="handleAvatarUpload(this)">'+
+    '<div class="p-name" id="pr-name-disp">'+escHtml(profile.name||"")+'</div>'+
+    '<div class="p-email" id="pr-email-disp">'+escHtml(profile.email||"")+'</div>'+
+    '<div class="stat-row">'+
+      '<div class="stat-box"><div class="stat-v">'+myPosts.length+'</div><div class="stat-l">Notices</div></div>'+
+      '<div class="stat-box"><div class="stat-v">'+myPosts.reduce(function(a,p){return a+(p.views||0);},0)+'</div><div class="stat-l">Total Views</div></div>'+
+      '<div class="stat-box"><div class="stat-v">Apr 25</div><div class="stat-l">Since</div></div>'+
+    '</div>'+
+    '<div class="sec">My Bio (public)</div>'+
+    '<div class="fg">'+
+      '<label class="fl">Short Bio <span class="opt">(visible on your posts)</span></label>'+
+      '<textarea class="fi" id="pr-bio" placeholder="Tell the community a little about yourself..." style="min-height:70px">'+escHtml(profile.bio||"")+'</textarea>'+
+    '</div>'+
+    '<div class="sec">My Details</div>'+
+    '<div class="fg"><label class="fl">Full Name<span class="req"> *</span></label><input class="fi" id="pr-name" value="'+escHtml(profile.name||"")+'" oninput="document.getElementById(\'pr-name-disp\').textContent=this.value"></div>'+
+    '<div class="fg"><label class="fl">Email Address<span class="req"> *</span></label><input class="fi" id="pr-email" type="email" value="'+escHtml(profile.email||"")+'" oninput="document.getElementById(\'pr-email-disp\').textContent=this.value"></div>'+
+    '<div class="fg"><label class="fl">Cell Number<span class="req"> *</span></label><input class="fi" id="pr-phone" placeholder="e.g. 082 456 7890" value="'+escHtml(profile.phone||"")+'"></div>'+
+    '<div class="fg"><label class="fl">Suburb / Area</label><select class="fi" id="pr-suburb">'+
+      '<option value="">Select suburb...</option>'+SUBURBS.map(function(s){return '<option'+(profile.suburb===s?" selected":"")+'>'+s+'</option>';}).join("")+
+    '</select></div>'+
+    '<button class="btn-full-b" onclick="saveProfileFromForm()">SAVE CHANGES</button>'+
+    '<button class="btn-full-g" onclick="closePanel()">CLOSE</button>'+
+    '<div class="profile-tabs" style="margin-top:24px">'+
+      '<button class="profile-tab on" id="ptab-posts" onclick="switchProfileTab(\'posts\')">My Notices ('+myPosts.length+')</button>'+
+      '<button class="profile-tab" id="ptab-favs" onclick="switchProfileTab(\'favs\')">★ Favourites ('+favCount+')</button>'+
+    '</div>'+
+    '<div id="profile-tab-content">'+myPostsHtml+'</div>'+
+    '</div>'
+  );
+}
+
+function handleAvatarUpload(input){
+  var f=input.files[0];if(!f)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    profile.avatar=e.target.result;
+    var wrap=document.querySelector(".avatar-wrap .avatar-img");
+    if(wrap)wrap.innerHTML='<img src="'+e.target.result+'" alt="Profile">';
+    updateNavAvatar();showToast("Photo updated!");
+  };
+  reader.readAsDataURL(f);
+}
+
+function buildPostCardHtml(p,showFavRemove){
+  var fc=FLYER_COLORS[p.id%FLYER_COLORS.length];
+  var thumb=p.isFlyer
+    ?'<div class="my-post-thumb-color" style="background:'+fc+'">'+p.cat+'</div>'
+    :'<img class="my-post-thumb" src="'+p.imgs[0]+'" alt="">';
+  var extra=showFavRemove
+    ?'<button onclick="event.stopPropagation();toggleFav(event,'+p.id+');openProfile()" style="padding:4px 10px;background:#fff8e1;color:#8A4500;border:1px solid #ffe082;border-radius:4px;font-size:11px;font-weight:700;cursor:pointer;margin-top:6px;font-family:inherit">★ Remove</button>'
+    :'';
+  return '<div class="my-post-card" onclick="closePanel();openModal('+p.id+')">'+
+    thumb+
+    '<div class="my-post-info">'+
+      '<div class="my-post-title">'+p.title+'</div>'+
+      '<div class="my-post-meta">'+p.cat+' &bull; '+p.suburb+'</div>'+
+      '<div class="my-post-stats">'+
+        '<span class="my-stat">&#128065; '+(p.views||0)+' views</span>'+
+        '<span class="my-stat">&#9829; '+(p.likes||0)+' likes</span>'+
+      '</div>'+extra+
+    '</div></div>';
+}
+function switchProfileTab(tab){
+  document.getElementById("ptab-posts").className="profile-tab"+(tab==="posts"?" on":"");
+  document.getElementById("ptab-favs").className="profile-tab"+(tab==="favs"?" on":"");
+  var content=document.getElementById("profile-tab-content");
+  if(!content)return;
+  if(tab==="posts"){
+    var myPosts=POSTS.filter(function(p){return MY_POST_IDS.indexOf(p.id)>=0;});
+    content.innerHTML=myPosts.length
+      ?myPosts.map(function(p){return buildPostCardHtml(p,false);}).join("")
+      :'<div class="fav-empty"><div class="fav-empty-icon">📋</div><div class="fav-empty-text">No posts yet. Hit ⊕ POST to get started!</div></div>';
+  } else {
+    var favList=POSTS.filter(function(p){return favPosts[p.id];});
+    content.innerHTML=favList.length
+      ?favList.map(function(p){return buildPostCardHtml(p,true);}).join("")
+      :'<div class="fav-empty"><div class="fav-empty-icon">★</div><div class="fav-empty-text">No favourites yet.<br>Tap the ☆ star on any post to save it here.</div></div>';
+  }
+}
+function saveProfileFromForm(){
+  var n=document.getElementById("pr-name").value.trim();
+  var em=document.getElementById("pr-email").value.trim();
+  var ph=document.getElementById("pr-phone").value.trim();
+  if(!n||!em||!ph){showToast("Name, email and cell are required.");return;}
+  profile.name=n;profile.email=em;profile.phone=ph;
+  profile.suburb=document.getElementById("pr-suburb").value;
+  profile.bio=document.getElementById("pr-bio").value.trim();
+  saveProfile();
+}
+
+function escHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+// ── POST FORM ──────────────────────────────────────────
+function openPost(){
+  uploadedImgs=[];draft={};showPrev=false;aiMode=false;aiFlyerHtml="";aiFlyerApproved=false;
+  openPanel("Post a Notice","");renderPostForm();
+}
+
+function renderPostForm(){
+  if(showPrev){renderPreview();return;}
+  var thumbs=uploadedImgs.length?'<div class="img-thumbs">'+uploadedImgs.map(function(src,i){
+    return '<div class="img-thumb"><img src="'+src+'"><button class="img-thumb-del" onclick="removeImg('+i+')">&#10005;</button></div>';
+  }).join("")+'</div><div class="img-count">'+uploadedImgs.length+' of 5 uploaded</div>':"";
+  var canAdd=uploadedImgs.length<5;
+  document.getElementById("pb").innerHTML=
+    '<div class="pf">'+
+    '<div class="fg">'+
+      '<label class="fl">Photos / Flyer <span class="opt">(up to 5 — JPEG, PNG, PDF)</span></label>'+
+      thumbs+
+      (canAdd?'<div class="img-upload-area" onclick="document.getElementById(\'img-file\').click()"><div class="upload-ic">&#8679;</div><div class="upload-t">Drop your flyer here or click to upload</div><div class="upload-s">PNG, JPG, PDF up to 10MB</div></div>':'<div style="color:#2A6840;font-size:12px;margin-bottom:10px">&#10003; Maximum 5 images reached</div>')+
+      '<input type="file" id="img-file" style="display:none" accept="image/jpeg,image/png,application/pdf" multiple onchange="handleImgUpload(this)">'+
+      '<div class="or-line">or</div>'+
+      '<button class="ai-btn" type="button" onclick="toggleAI()">&#10022;&nbsp; AI Generate Flyer — we design it for you!</button>'+
+      (aiMode?renderAIForm():'')+
+    '</div>'+
+    '<div class="sec">Notice Details</div>'+
+    '<div class="form-err-box" id="form-err"></div>'+
+    '<div class="fg"><label class="fl">Title<span class="req"> *</span></label><input class="fi" id="p-title" placeholder="e.g. Sunday Morning Yoga in the Park" value="'+(draft.title||"")+'"></div>'+
+    '<div class="fg"><label class="fl">Description <span class="opt">(optional)</span></label><textarea class="fi" id="p-desc" placeholder="Tell the community about your notice...">'+(draft.desc||"")+'</textarea></div>'+
+    '<div class="fg"><label class="fl">Category<span class="req"> *</span></label><select class="fi" id="p-cat" onchange="saveDraft();renderPostForm()"><option value="">Choose a category</option>'+
+    ["Events","Markets","Workshops","Services","Jobs","Housing","Pets","Wanted","Community","Classifieds","Healing"].map(function(c){return '<option'+(draft.cat===c?" selected":"")+'>'+c+'</option>';}).join("")+
+    '</select></div>'+
+    '<div class="fg"><label class="fl">Tags <span class="opt">(comma separated)</span></label><input class="fi" id="p-tags" placeholder="breathwork, yoga, wellness" value="'+(draft.tags||"")+'"></div>'+
+    '<div class="fg"><label class="fl">Price <span class="opt">(optional)</span></label><input class="fi" id="p-price" placeholder="e.g. R350/hr, From R45, Free" value="'+(draft.price||"")+'"></div>'+
+    '<div class="sec">Contact & Location</div>'+
+    '<div class="fg"><label class="fl">Suburb / Area<span class="req"> *</span></label><select class="fi" id="p-suburb"><option value="">Select your suburb...</option>'+
+    SUBURBS.map(function(s){return '<option'+(draft.suburb===s?" selected":"")+'>'+s+'</option>';}).join("")+
+    '</select></div>'+
+    '<div class="frow"><div><label class="fl">Email Address<span class="req"> *</span></label><input class="fi" id="p-email" type="email" placeholder="hello@example.com" value="'+(draft.email||profile.email||"")+'"></div>'+
+    '<div><label class="fl">Cell Number<span class="req"> *</span></label><input class="fi" id="p-phone" placeholder="e.g. 082 456 7890" value="'+(draft.phone||profile.phone||"")+'"></div></div>'+
+    '<div class="fg"><label class="fl">Website / Link <span class="opt">(optional)</span></label><input class="fi" id="p-website" type="url" placeholder="https://..." value="'+(draft.website||"")+'"></div>'+
+    (["Events","Markets","Workshops","Healing"].indexOf(draft.cat||"")>=0?
+    '<div class="frow">'+
+      '<div><label class="fl">Event Date <span class="opt">(optional)</span></label><input class="fi" id="p-edate" type="datetime-local" value="'+(draft.edate||"")+'"></div>'+
+      '<div><label class="fl">Expiry Date <span class="opt">(optional)</span></label><input class="fi" id="p-expiry" type="datetime-local" value="'+(draft.expiry||"")+'"><div style="font-size:11px;color:#aaa;margin-top:5px">Notice removed after this date</div></div>'+
+    '</div>'
+    :
+    '<div class="fg"><label class="fl">Expiry Date <span class="opt">(optional)</span></label><input class="fi" id="p-expiry" type="datetime-local" value="'+(draft.expiry||"")+'"><div style="font-size:11px;color:#aaa;margin-top:5px">Notice removed after this date</div></div>'
+    )+
+    '<div class="fb-row"><button class="fb-prev" onclick="doPreview()">&#9654; Preview</button><button class="fb-post" onclick="doPublish()">&#10148; Post to Board</button></div>'+
+    '</div>';
+}
+
+function renderAIForm(){
+  return '<div class="ai-form" id="ai-form">'+
+    '<div style="font-weight:700;font-size:14px;margin-bottom:14px">&#10022; Tell us about your notice — we\'ll design it!</div>'+
+    '<div class="fg"><label class="fl">What is your notice about?</label><input class="fi" id="ai-about" placeholder="e.g. I bake the best milk tarts in Wynberg, made with love" value="'+(draft.aiAbout||"")+'"></div>'+
+    '<div class="fg"><label class="fl">Your name</label><input class="fi" id="ai-name" placeholder="e.g. Mae Hendricks" value="'+(draft.aiName||profile.name||"")+'"></div>'+
+    '<div class="fg"><label class="fl">Contact number</label><input class="fi" id="ai-phone2" placeholder="e.g. 082 456 7890" value="'+(draft.aiPhone||profile.phone||"")+'"></div>'+
+    '<div class="fg"><label class="fl">Price (if applicable)</label><input class="fi" id="ai-price" placeholder="e.g. From R45, Free, POA" value="'+(draft.aiPrice||"")+'"></div>'+
+    '<button class="ai-btn" type="button" onclick="generateAIFlyer()" style="background:#1a1a1a;color:#fff;border-color:#1a1a1a">&#10022;&nbsp; Generate My Flyer Now</button>'+
+    '<div class="ai-generating" id="ai-loading"><span class="spinner"></span>Creating your flyer...</div>'+
+    (aiFlyerHtml?'<div style="margin-top:14px"><div style="font-size:12px;color:#aaa;margin-bottom:8px;text-align:center">Here\'s your flyer — approve it or regenerate:</div>'+
+    '<div style="border-radius:8px;overflow:hidden;border:1px solid #ddd">'+aiFlyerHtml+'</div>'+
+    '<div class="ai-flyer-actions">'+
+      '<button class="ai-approve-btn" onclick="approveAIFlyer()">&#10003;&nbsp; Looks great!</button>'+
+      '<button class="ai-dl-btn" onclick="downloadAIFlyer()">&#8681;&nbsp; Download</button>'+
+      '<button class="ai-regen-btn" onclick="generateAIFlyer()">&#8635; Regenerate</button>'+
+    '</div>'+
+    (aiFlyerApproved?'<div style="background:#e8f5e9;border-radius:6px;padding:10px 14px;font-size:13px;color:#2A6840;margin-top:10px;text-align:center">&#10003; Flyer approved! Fill in details below and post.</div>':'')+
+    '</div>':'')+'</div>';
+}
+
+function toggleAI(){aiMode=!aiMode;renderPostForm();}
+
+function generateAIFlyer(){
+  saveDraft();
+  var about=draft.aiAbout||"";var name=draft.aiName||"";var phone=draft.aiPhone||"";var price=draft.aiPrice||"";
+  if(!about){showToast("Please describe what your notice is about.");return;}
+  aiFlyerApproved=false;
+  var loading=document.getElementById("ai-loading");if(loading)loading.style.display="block";
+  setTimeout(function(){
+    var palette=[{bg:"#C8380A"},{bg:"#2A6840"},{bg:"#5B2A8B"},{bg:"#006689"},{bg:"#9C1060"},{bg:"#5A1A7A"},{bg:"#D84315"}];
+    var col=palette[Math.floor(Math.random()*palette.length)].bg;
+    aiFlyerHtml='<div id="ai-flyer-content" style="background:'+col+';padding:36px 28px;text-align:center;font-family:Helvetica Neue,Helvetica,Arial,sans-serif;min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center">'+
+      '<div style="font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:16px">The Notice Board</div>'+
+      '<div style="font-size:24px;font-weight:900;line-height:1.2;color:#fff;margin-bottom:14px;max-width:300px">'+about+'</div>'+
+      (price?'<div style="background:rgba(255,255,255,.2);display:inline-block;padding:7px 20px;border-radius:30px;font-size:19px;font-weight:900;color:#fff;margin-bottom:16px">'+price+'</div>':'<br>')+
+      '<div style="border-top:1px solid rgba(255,255,255,.25);margin:14px auto;width:80px"></div>'+
+      (name?'<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:5px">'+name+'</div>':'')+
+      (phone?'<div style="font-size:13px;color:rgba(255,255,255,.8)">'+phone+'</div>':'')+
+      '<div style="font-size:10px;color:rgba(255,255,255,.4);margin-top:14px;letter-spacing:1px">THENOTICEBOARD.CO.ZA</div>'+
+      '</div>';
+    if(loading)loading.style.display="none";
+    if(!draft.title&&document.getElementById("p-title"))document.getElementById("p-title").value=about.length>60?about.substring(0,57)+"...":about;
+    if(!draft.phone&&phone&&document.getElementById("p-phone"))document.getElementById("p-phone").value=phone;
+    if(!draft.price&&price&&document.getElementById("p-price"))document.getElementById("p-price").value=price;
+    renderPostForm();
+  },1600);
+}
+
+function approveAIFlyer(){aiFlyerApproved=true;saveDraft();renderPostForm();showToast("Flyer approved!");}
+function downloadAIFlyer(){
+  var el=document.getElementById("ai-flyer-content");
+  if(!el){showToast("Generate a flyer first.");return;}
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><foreignObject width="100%" height="100%"><div xmlns="http://www.w3.org/1999/xhtml">'+el.outerHTML+'</div></foreignObject></svg>';
+  var blob=new Blob([svg],{type:"image/svg+xml"});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement("a");a.href=url;a.download="my-local-board-flyer.svg";
+  document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
+  showToast("Flyer downloaded!");
+}
+
+function handleImgUpload(input){
+  var files=Array.from(input.files),remaining=5-uploadedImgs.length,toProcess=files.slice(0,remaining),loaded=0;
+  if(!toProcess.length){renderPostForm();return;}
+  toProcess.forEach(function(f){
+    var reader=new FileReader();
+    reader.onload=function(e){uploadedImgs.push(e.target.result);loaded++;if(loaded===toProcess.length){saveDraft();renderPostForm();}};
+    reader.readAsDataURL(f);
+  });
+}
+function removeImg(i){uploadedImgs.splice(i,1);renderPostForm();}
+
+function saveDraft(){
+  function g(id){var el=document.getElementById(id);return el?el.value:"";}
+  draft.title=g("p-title")||draft.title;draft.desc=g("p-desc")||draft.desc;draft.cat=g("p-cat")||draft.cat;
+  draft.tags=g("p-tags")||draft.tags;draft.price=g("p-price")||draft.price;draft.suburb=g("p-suburb")||draft.suburb;
+  draft.email=g("p-email")||draft.email;draft.phone=g("p-phone")||draft.phone;
+  draft.website=g("p-website")||draft.website;draft.edate=g("p-edate")||draft.edate;draft.expiry=g("p-expiry")||draft.expiry;
+  draft.aiAbout=g("ai-about")||draft.aiAbout;draft.aiName=g("ai-name")||draft.aiName;
+  draft.aiPhone=g("ai-phone2")||draft.aiPhone;draft.aiPrice=g("ai-price")||draft.aiPrice;
+}
+
+function validatePost(){
+  var errs=[];
+  if(!draft.title)errs.push("Title");if(!draft.cat)errs.push("Category");
+  if(!draft.suburb)errs.push("Suburb");if(!draft.email)errs.push("Email");if(!draft.phone)errs.push("Cell Number");
+  return errs;
+}
+
+function doPreview(){
+  saveDraft();var errs=validatePost();
+  if(errs.length){var eb=document.getElementById("form-err");if(eb){eb.classList.add("show");eb.textContent="Please fill in all required (*) fields: "+errs.join(", ")+". Thank you.";}return;}
+  showPrev=true;renderPreview();
+}
+
+function renderPreview(){
+  var b=BADGE[draft.cat]||{bg:"#f0f0f0",c:"#333"};
+  var thumbRow=uploadedImgs.length?'<div class="img-thumbs" style="margin-bottom:12px">'+uploadedImgs.map(function(s){return '<div class="img-thumb"><img src="'+s+'"></div>';}).join("")+'</div>'
+    :(aiFlyerApproved&&aiFlyerHtml?'<div style="border-radius:6px;overflow:hidden;margin-bottom:12px">'+aiFlyerHtml+'</div>':"");
+  document.getElementById("pb").innerHTML=
+    '<div class="pf">'+
+    '<button class="back-lnk" onclick="showPrev=false;renderPostForm()">&#8592; Back to edit</button>'+
+    '<div class="prev-card">'+
+      thumbRow+
+      '<div class="m-badge" style="display:inline-block;background:'+b.bg+';color:'+b.c+';margin-bottom:10px">'+draft.cat+'</div>'+
+      '<div style="font-weight:900;font-size:18px;line-height:1.3;margin-bottom:8px">'+draft.title+'</div>'+
+      (draft.price?'<div style="font-weight:900;font-size:16px;color:#2A6840;margin-bottom:8px">'+draft.price+'</div>':'')+
+      (draft.desc?'<div style="font-size:13px;color:#666;line-height:1.65;margin-bottom:12px">'+draft.desc+'</div>':'')+
+      '<div style="font-size:12px;color:#aaa;margin-bottom:3px">&#128205; '+draft.suburb+'</div>'+
+      '<div style="font-size:12px;color:#555;margin-bottom:2px">&#9993; '+draft.email+'</div>'+
+      '<div style="font-size:12px;color:#555">&#128222; '+draft.phone+'</div>'+
+      (draft.tags?'<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:5px">'+draft.tags.split(',').map(function(t){return '<span style="padding:3px 8px;background:#fff;border:1px solid #e0e0e0;border-radius:2px;font-size:11px;color:#666">#'+t.trim()+'</span>';}).join('')+'</div>':'')+
+    '</div>'+
+    '<div class="note-box">&#10022; Free to post &bull; Visible to the Cape Town community immediately</div>'+
+    '<div class="fb-row"><button class="fb-prev" onclick="showPrev=false;renderPostForm()">&#8592; Edit</button><button class="fb-post" onclick="doPublish()">&#10148; Post to Board</button></div>'+
+    '</div>';
+}
+
+function doPublish(){
+  saveDraft();var errs=validatePost();
+  if(errs.length){showToast("Required: "+errs.join(", "));return;}
+  var fallbacks=["https://images.unsplash.com/photo-1543610892-0b1f7e6d8ac1?w=800&q=80","https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&q=80","https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&q=80"];
+  var imgs=uploadedImgs.length?uploadedImgs:[fallbacks[Math.floor(Math.random()*fallbacks.length)]];
+  var np={id:Date.now(),cat:draft.cat,title:draft.title,suburb:draft.suburb,date:"Just now",author:profile.name||"Anonymous",
+    contact:draft.email+" | "+draft.phone,price:draft.price||null,
+    tags:(draft.tags||"").split(",").map(function(t){return t.trim();}).filter(Boolean),
+    desc:draft.desc||"",imgs:imgs,isFlyer:aiFlyerApproved&&!uploadedImgs.length,views:0,likes:0};
+  POSTS.unshift(np);MY_POST_IDS.push(np.id);
+  closePanel();activeCat="All";buildCats();buildMobileCats();renderGrid();
+  window.scrollTo({top:0,behavior:"smooth"});showToast("Your notice is live!");
+}
+</script>
+</body>
+</html>
+
+<style>
+/* ── ADMIN STYLES ──────────────────────────────────── */
+.admin-gate{display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:2000;align-items:center;justify-content:center;padding:20px}
+.admin-gate.open{display:flex}
+.admin-login{background:#fff;border-radius:8px;max-width:400px;width:100%;padding:36px}
+.admin-login h2{font-weight:900;font-size:22px;margin-bottom:6px;letter-spacing:-.3px}
+.admin-login p{font-size:13px;color:#aaa;margin-bottom:24px}
+.admin-login input{width:100%;padding:12px 14px;border:1.5px solid #e0e0e0;border-radius:6px;font-family:inherit;font-size:14px;outline:none;margin-bottom:14px}
+.admin-login input:focus{border-color:#1a1a1a}
+.admin-login button{width:100%;padding:14px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:900;font-size:14px;cursor:pointer}
+.admin-login .err{color:#cc0000;font-size:13px;margin-bottom:12px;display:none}
+.admin-login .err.show{display:block}
+.admin-cancel{background:none;border:none;color:#aaa;font-family:inherit;font-size:13px;cursor:pointer;width:100%;margin-top:12px;text-align:center}
+
+.admin-panel{display:none;position:fixed;inset:0;background:#f4f4f4;z-index:1900;overflow-y:auto}
+.admin-panel.open{display:block}
+.admin-nav{background:#1a1a1a;height:60px;display:flex;align-items:center;padding:0 24px;gap:20px;position:sticky;top:0;z-index:10}
+.admin-nav .a-logo{font-weight:900;font-size:16px;color:#F2D98A;letter-spacing:-.3px}
+.admin-nav .a-badge{background:#cc0000;color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px}
+.admin-tabs{display:flex;gap:4px;flex:1}
+.admin-tab{background:none;border:none;color:#888;font-family:inherit;font-size:13px;padding:8px 16px;border-radius:4px;cursor:pointer;font-weight:500}
+.admin-tab.on{background:rgba(255,255,255,.1);color:#fff;font-weight:700}
+.admin-exit{background:#cc0000;color:#fff;border:none;border-radius:4px;padding:8px 16px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer}
+
+.admin-body{max-width:1100px;margin:0 auto;padding:28px 24px}
+.admin-section{display:none}
+.admin-section.on{display:block}
+
+.admin-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+@media(max-width:700px){.admin-stats{grid-template-columns:repeat(2,1fr)}}
+.a-stat{background:#fff;border-radius:8px;padding:18px 20px;border:1px solid #eee}
+.a-stat-val{font-weight:900;font-size:28px;color:#1a1a1a}
+.a-stat-lbl{font-size:12px;color:#aaa;margin-top:3px;text-transform:uppercase;letter-spacing:.5px}
+
+.admin-table{background:#fff;border-radius:8px;overflow:hidden;border:1px solid #eee;margin-bottom:24px}
+.admin-table-header{padding:14px 18px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between}
+.admin-table-title{font-weight:700;font-size:15px}
+.admin-search{padding:8px 12px;border:1.5px solid #e0e0e0;border-radius:6px;font-family:inherit;font-size:13px;outline:none;width:200px}
+.admin-search:focus{border-color:#1a1a1a}
+
+.a-row{display:grid;gap:0;border-bottom:1px solid #f5f5f5}
+.a-row:last-child{border-bottom:none}
+.a-row-inner{display:flex;align-items:center;gap:12px;padding:12px 18px;transition:background .15s}
+.a-row-inner:hover{background:#fafafa}
+.a-thumb{width:52px;height:52px;border-radius:4px;object-fit:cover;flex-shrink:0;background:#ddd}
+.a-thumb-color{width:52px;height:52px;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:rgba(255,255,255,.8)}
+.a-info{flex:1;min-width:0}
+.a-title{font-weight:700;font-size:14px;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.a-meta{font-size:11px;color:#aaa;margin-top:2px}
+.a-actions{display:flex;gap:6px;flex-shrink:0}
+.a-btn-del{padding:7px 14px;background:#fff0f0;color:#cc0000;border:1px solid #ffcccc;border-radius:4px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.a-btn-del:hover{background:#cc0000;color:#fff;border-color:#cc0000}
+.a-btn-block{padding:7px 14px;background:#fff8e1;color:#8A4500;border:1px solid #ffe082;border-radius:4px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.a-btn-block:hover{background:#8A4500;color:#fff;border-color:#8A4500}
+.a-btn-restore{padding:7px 14px;background:#e8f5e9;color:#2A6840;border:1px solid #a5d6a7;border-radius:4px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer;white-space:nowrap}
+.a-badge-status{display:inline-block;padding:3px 8px;border-radius:3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+.status-active{background:#e8f5e9;color:#2A6840}
+.status-blocked{background:#ffebee;color:#cc0000}
+.status-removed{background:#f5f5f5;color:#aaa}
+
+.report-item{background:#fff;border:1px solid #eee;border-radius:8px;padding:16px 18px;margin-bottom:12px;display:flex;gap:14px;align-items:flex-start}
+.report-badge{background:#ffebee;color:#cc0000;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px}
+.report-info{flex:1}
+.report-title{font-weight:700;font-size:14px;color:#1a1a1a;margin-bottom:3px}
+.report-detail{font-size:12px;color:#888;margin-bottom:10px}
+.report-actions{display:flex;gap:8px}
+.no-reports{text-align:center;padding:40px;color:#aaa;font-size:14px}
+</style>
+
+<!-- ADMIN GATE (login) -->
+<div class="admin-gate" id="admin-gate">
+  <div class="admin-login">
+    <h2>Admin Access</h2>
+    <p>The Notice Board — Admin only. Authorised personnel only.</p>
+    <div class="err" id="admin-err">Incorrect password. Try again.</div>
+    <input type="text" id="admin-user" placeholder="Admin username" autocomplete="off">
+    <input type="password" id="admin-pass" placeholder="Password" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    <button onclick="doAdminLogin()">SIGN IN TO ADMIN</button>
+    <button class="admin-cancel" onclick="closeAdminGate()">Cancel</button>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div class="admin-panel" id="admin-panel">
+  <div class="admin-nav">
+    <div class="a-logo">The Notice Board</div>
+    <div class="a-badge">Admin</div>
+    <div class="admin-tabs">
+      <button class="admin-tab on" onclick="adminTab('dashboard')">Dashboard</button>
+      <button class="admin-tab" onclick="adminTab('posts')">Posts</button>
+      <button class="admin-tab" onclick="adminTab('users')">Users</button>
+      <button class="admin-tab" onclick="adminTab('reports')">Reports <span id="report-count-badge"></span></button>
+    </div>
+    <button class="admin-exit" onclick="exitAdmin()">Exit Admin</button>
+  </div>
+  <div class="admin-body">
+
+    <!-- DASHBOARD -->
+    <div class="admin-section on" id="admin-dashboard">
+      <div class="admin-stats" id="admin-stats-grid"></div>
+      <div style="background:#fff;border-radius:8px;padding:20px 24px;border:1px solid #eee;margin-bottom:20px">
+        <div style="font-weight:700;font-size:15px;margin-bottom:16px">Quick Actions</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button onclick="adminTab('posts')" style="padding:10px 20px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer">Manage Posts</button>
+          <button onclick="adminTab('reports')" style="padding:10px 20px;background:#cc0000;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer">Review Reports</button>
+          <button onclick="adminTab('users')" style="padding:10px 20px;background:#fff;color:#1a1a1a;border:1.5px solid #1a1a1a;border-radius:6px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer">Manage Users</button>
+        </div>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #ffe082;border-radius:8px;padding:16px 20px;font-size:13px;color:#7d5a00;line-height:1.6">
+        <strong>Admin Instructions:</strong> Use this panel to delete inappropriate posts, block users who violate T&amp;C's, and review reported content. All actions are immediate. Blocked users cannot post — their existing posts remain visible but marked. To access admin, triple-click the logo on the live site and enter your credentials.
+      </div>
+    </div>
+
+    <!-- POSTS -->
+    <div class="admin-section" id="admin-posts">
+      <div class="admin-table">
+        <div class="admin-table-header">
+          <div class="admin-table-title">All Posts</div>
+          <input class="admin-search" id="admin-post-search" placeholder="Search posts..." oninput="renderAdminPosts()">
+        </div>
+        <div id="admin-posts-list"></div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="admin-section" id="admin-users">
+      <div class="admin-table">
+        <div class="admin-table-header">
+          <div class="admin-table-title">Registered Users</div>
+          <input class="admin-search" id="admin-user-search" placeholder="Search users..." oninput="renderAdminUsers()">
+        </div>
+        <div id="admin-users-list"></div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="admin-section" id="admin-reports">
+      <div id="admin-reports-list"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── ADMIN CONFIG ────────────────────────────────────────
+// CHANGE THESE CREDENTIALS before going live!
+var ADMIN_CREDS={username:"noticeboard_admin",password:"TNB@dmin2026!"};
+
+var adminLoggedIn=false;
+var blockedUsers={};
+var removedPosts={};
+var reportedItems=[];
+var logoClickCount=0, logoClickTimer=null;
+
+// Hidden admin access: triple-click the logo
+document.getElementById("logo").addEventListener("click",function(){
+  logoClickCount++;
+  clearTimeout(logoClickTimer);
+  logoClickTimer=setTimeout(function(){logoClickCount=0;},600);
+  if(logoClickCount>=3){
+    logoClickCount=0;
+    openAdminGate();
+  }
+});
+
+// Also accessible via URL hash #admin
+if(window.location.hash==="#admin"){openAdminGate();}
+window.addEventListener("hashchange",function(){if(window.location.hash==="#admin")openAdminGate();});
+
+function openAdminGate(){
+  if(adminLoggedIn){openAdminPanel();return;}
+  document.getElementById("admin-gate").classList.add("open");
+  setTimeout(function(){document.getElementById("admin-user").focus();},100);
+}
+function closeAdminGate(){
+  document.getElementById("admin-gate").classList.remove("open");
+  document.getElementById("admin-err").classList.remove("show");
+  document.getElementById("admin-user").value="";
+  document.getElementById("admin-pass").value="";
+  if(window.location.hash==="#admin")history.replaceState(null,"",window.location.pathname);
+}
+function doAdminLogin(){
+  var u=document.getElementById("admin-user").value.trim();
+  var p=document.getElementById("admin-pass").value;
+  if(u===ADMIN_CREDS.username&&p===ADMIN_CREDS.password){
+    adminLoggedIn=true;
+    closeAdminGate();
+    openAdminPanel();
+  } else {
+    document.getElementById("admin-err").classList.add("show");
+    document.getElementById("admin-pass").value="";
+    document.getElementById("admin-pass").focus();
+  }
+}
+function openAdminPanel(){
+  document.getElementById("admin-panel").classList.add("open");
+  renderAdminDashboard();
+  renderAdminPosts();
+  renderAdminUsers();
+  renderAdminReports();
+}
+function exitAdmin(){
+  document.getElementById("admin-panel").classList.remove("open");
+  adminLoggedIn=false;
+  history.replaceState(null,"",window.location.pathname);
+}
+function adminTab(tab){
+  document.querySelectorAll(".admin-tab").forEach(function(b,i){b.className="admin-tab"+(["dashboard","posts","users","reports"][i]===tab?" on":"");});
+  document.querySelectorAll(".admin-section").forEach(function(s){s.classList.remove("on");});
+  document.getElementById("admin-"+tab).classList.add("on");
+}
+
+// ── DASHBOARD ───────────────────────────────────────────
+function renderAdminDashboard(){
+  var totalPosts=POSTS.length;
+  var removed=Object.keys(removedPosts).length;
+  var blocked=Object.keys(blockedUsers).length;
+  var reports=reportedItems.length;
+  document.getElementById("admin-stats-grid").innerHTML=[
+    {v:totalPosts,l:"Total Posts",c:"#1a1a1a"},
+    {v:removed,l:"Removed Posts",c:"#cc0000"},
+    {v:blocked,l:"Blocked Users",c:"#8A4500"},
+    {v:reports,l:"Reports Pending",c:"#5B2A8B"},
+  ].map(function(s){
+    return '<div class="a-stat"><div class="a-stat-val" style="color:'+s.c+'">'+s.v+'</div><div class="a-stat-lbl">'+s.l+'</div></div>';
+  }).join("");
+  var badge=document.getElementById("report-count-badge");
+  if(badge)badge.textContent=reports>0?"("+reports+")":"";
+}
+
+// ── POSTS ───────────────────────────────────────────────
+function renderAdminPosts(){
+  var search=(document.getElementById("admin-post-search")||{}).value||"";
+  var posts=POSTS.filter(function(p){
+    return !search||[p.title,p.author,p.suburb,p.cat].join(" ").toLowerCase().indexOf(search.toLowerCase())>=0;
+  });
+  var html=posts.map(function(p){
+    var removed=removedPosts[p.id];
+    var fc=FLYER_COLORS[p.id%FLYER_COLORS.length];
+    var thumbHtml=p.imgs&&p.imgs.length&&!p.isFlyer
+      ?'<img class="a-thumb" src="'+p.imgs[0]+'" alt="">'
+      :'<div class="a-thumb-color" style="background:'+fc+'">'+p.cat+'</div>';
+    var statusHtml=removed
+      ?'<span class="a-badge-status status-removed">Removed</span>'
+      :'<span class="a-badge-status status-active">Live</span>';
+    var actionBtn=removed
+      ?'<button class="a-btn-restore" onclick="restorePost('+p.id+')">Restore</button>'
+      :'<button class="a-btn-del" onclick="deletePost('+p.id+')">Remove</button>';
+    return '<div class="a-row"><div class="a-row-inner">'+
+      thumbHtml+
+      '<div class="a-info">'+
+        '<div class="a-title">'+p.title+'</div>'+
+        '<div class="a-meta">'+p.cat+' &bull; '+p.suburb+' &bull; by '+p.author+' &bull; '+p.date+' &bull; '+statusHtml+' &bull; &#128065; '+(p.views||0)+' &bull; &#9829; '+(p.likes||0)+'</div>'+
+      '</div>'+
+      '<div class="a-actions">'+actionBtn+'</div>'+
+    '</div></div>';
+  }).join("");
+  document.getElementById("admin-posts-list").innerHTML=html||'<div style="padding:30px;text-align:center;color:#aaa;font-size:13px">No posts found</div>';
+}
+
+function deletePost(id){
+  if(!confirm("Remove this post from the feed? You can restore it later."))return;
+  removedPosts[id]=true;
+  // Remove from live POSTS array
+  var idx=POSTS.findIndex(function(p){return p.id===id;});
+  if(idx>=0)POSTS.splice(idx,1);
+  renderAdminPosts();renderAdminDashboard();renderGrid();
+  showToast("Post removed from feed.");
+}
+function restorePost(id){removedPosts[id]=false;renderAdminPosts();renderAdminDashboard();showToast("Post restored.");}
+
+// ── USERS ───────────────────────────────────────────────
+// Simulated user list from post authors
+function getUsers(){
+  var seen={};
+  POSTS.forEach(function(p){
+    if(!seen[p.author]){seen[p.author]={name:p.author,contact:p.contact,posts:0};}
+    seen[p.author].posts++;
+  });
+  return Object.values(seen);
+}
+function renderAdminUsers(){
+  var search=(document.getElementById("admin-user-search")||{}).value||"";
+  var users=getUsers().filter(function(u){return !search||u.name.toLowerCase().indexOf(search.toLowerCase())>=0;});
+  var html=users.map(function(u){
+    var isBlocked=blockedUsers[u.name];
+    var initials=u.name.split(" ").map(function(w){return w[0];}).join("").substring(0,2).toUpperCase();
+    var statusHtml=isBlocked
+      ?'<span class="a-badge-status status-blocked">Blocked</span>'
+      :'<span class="a-badge-status status-active">Active</span>';
+    var actionBtn=isBlocked
+      ?'<button class="a-btn-restore" onclick="unblockUser(\''+u.name.replace(/'/g,"\\'")+'\')" >Unblock</button>'
+      :'<button class="a-btn-block" onclick="blockUser(\''+u.name.replace(/'/g,"\\'")+'\')">Block User</button>';
+    return '<div class="a-row"><div class="a-row-inner">'+
+      '<div style="width:44px;height:44px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;color:#fff;flex-shrink:0">'+initials+'</div>'+
+      '<div class="a-info">'+
+        '<div class="a-title">'+u.name+'</div>'+
+        '<div class="a-meta">'+(u.contact||"No contact")+' &bull; '+u.posts+' post'+(u.posts!==1?"s":"")+' &bull; '+statusHtml+'</div>'+
+      '</div>'+
+      '<div class="a-actions">'+
+        '<button class="a-btn-del" onclick="contactUserWA(\''+u.name.replace(/'/g,"\\'")+'\')">WhatsApp</button>'+
+        actionBtn+
+      '</div>'+
+    '</div></div>';
+  }).join("");
+  document.getElementById("admin-users-list").innerHTML=html||'<div style="padding:30px;text-align:center;color:#aaa;font-size:13px">No users found</div>';
+}
+function blockUser(name){
+  if(!confirm("Block "+name+"? They will not be able to post new notices."))return;
+  blockedUsers[name]=true;
+  renderAdminUsers();renderAdminDashboard();
+  showToast(name+" has been blocked.");
+}
+function unblockUser(name){
+  blockedUsers[name]=false;
+  renderAdminUsers();renderAdminDashboard();
+  showToast(name+" has been unblocked.");
+}
+function contactUserWA(name){
+  var user=getUsers().find(function(u){return u.name===name;});
+  var phone=user&&user.contact?user.contact.replace(/[^0-9]/g,""):"";
+  var msg="Hi "+name+", this is The Notice Board admin team. We're reaching out regarding your post on our platform.";
+  if(phone&&phone.length>=9){
+    window.open("https://wa.me/27"+phone.replace(/^0/,"")+"?text="+encodeURIComponent(msg),"_blank");
+  } else {
+    alert("No valid phone number found for "+name+". Contact: "+(user&&user.contact||"unknown"));
+  }
+}
+
+// ── REPORTS ─────────────────────────────────────────────
+// Override the submitReport function to also log to admin panel
+var _origSubmitReport=window.submitReport;
+window.submitReport=function(){
+  var sel=document.querySelector('input[name="rr"]:checked');
+  if(!sel){alert("Please select a reason.");return;}
+  if(currentPost){
+    reportedItems.push({post:Object.assign({},currentPost),reason:sel.value,time:new Date().toLocaleString(),id:Date.now()});
+    renderAdminReports();renderAdminDashboard();
+    var badge=document.getElementById("report-count-badge");
+    if(badge&&reportedItems.length>0)badge.textContent="("+reportedItems.length+")";
+  }
+  var msg="🚨 REPORT — The Notice Board\nPost: "+(currentPost?currentPost.title:"Unknown")+"\nSuburb: "+(currentPost?currentPost.suburb:"")+"\nReason: "+sel.value+"\nTime: "+new Date().toLocaleString();
+  window.open("https://wa.me/27765136622?text="+encodeURIComponent(msg),"_blank");
+  closeReport();showToast("Report sent to admin via WhatsApp.");
+};
+
+function renderAdminReports(){
+  var badge=document.getElementById("report-count-badge");
+  if(badge)badge.textContent=reportedItems.length>0?"("+reportedItems.length+")":"";
+  if(!document.getElementById("admin-reports-list"))return;
+  if(!reportedItems.length){
+    document.getElementById("admin-reports-list").innerHTML='<div class="no-reports">&#10003; No pending reports — the community is looking clean!</div>';
+    return;
+  }
+  document.getElementById("admin-reports-list").innerHTML=reportedItems.map(function(r,i){
+    var p=r.post;
+    return '<div class="report-item">'+
+      '<div class="report-badge">REPORT</div>'+
+      '<div class="report-info">'+
+        '<div class="report-title">'+p.title+'</div>'+
+        '<div class="report-detail">'+p.cat+' &bull; '+p.suburb+' &bull; by '+p.author+' &bull; Reported: '+r.time+'<br><strong>Reason:</strong> '+r.reason+'</div>'+
+        '<div class="report-actions">'+
+          '<button class="a-btn-del" onclick="deleteReportedPost('+i+','+p.id+')">Remove Post</button>'+
+          '<button class="a-btn-block" onclick="blockReportedUser('+i+',\''+p.author.replace(/'/g,"\\'")+'\')">Block User</button>'+
+          '<button class="a-btn-restore" onclick="dismissReport('+i+')">Dismiss</button>'+
+        '</div>'+
+      '</div></div>';
+  }).join("");
+}
+function deleteReportedPost(idx,postId){
+  deletePost(postId);
+  reportedItems.splice(idx,1);
+  renderAdminReports();renderAdminDashboard();
+}
+function blockReportedUser(idx,name){
+  blockUser(name);
+  reportedItems.splice(idx,1);
+  renderAdminReports();renderAdminDashboard();
+}
+function dismissReport(idx){
+  reportedItems.splice(idx,1);
+  renderAdminReports();renderAdminDashboard();
+  showToast("Report dismissed.");
+}
+</script>
