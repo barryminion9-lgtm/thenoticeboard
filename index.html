@@ -1187,7 +1187,10 @@ function renderProfile(){
       '<p>Sign in to save favourites, manage your posts and connect with the community.</p>'+
       '<input type="text" id="reg-name" placeholder="Your full name">'+
       '<input type="email" id="reg-email" placeholder="Email address">'+
-      '<input type="password" id="reg-pass" placeholder="Create a password">'+
+      '<div style="position:relative;margin-bottom:12px">'+
+        '<input type="password" id="reg-pass" placeholder="Create a password" style="margin-bottom:0;padding-right:46px">'+
+        '<button type="button" aria-label="Show password" onclick="togglePass(this,\'reg-pass\')" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:6px 10px;color:#888;line-height:1">👁</button>'+
+      '</div>'+
       '<button class="reg-btn" onclick="doRegister()">Create Account</button>'+
       '<p class="sign-in-link">Already have an account? <span onclick="doLogin()">Sign In</span></p>'+
     '</div>';
@@ -1485,6 +1488,14 @@ function openAbout(){document.getElementById("about-bg").classList.add("open");d
 function closeAbout(){document.getElementById("about-bg").classList.remove("open");document.body.style.overflow="";}
 
 // ====================================================
+// PASSWORD SHOW/HIDE TOGGLE
+function togglePass(btn,id){
+  var inp=document.getElementById(id);
+  if(!inp)return;
+  if(inp.type==="password"){inp.type="text";btn.textContent="🙈";btn.setAttribute("aria-label","Hide password");}
+  else{inp.type="password";btn.textContent="👁";btn.setAttribute("aria-label","Show password");}
+}
+
 // WELCOME POPUP
 // ====================================================
 function showWelcome(){
