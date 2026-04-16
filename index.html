@@ -16,7 +16,7 @@ nav{position:sticky;top:0;z-index:300;background:#fff;border-bottom:1px solid #e
 .nav-row2{display:flex;align-items:center;padding:6px 18px 7px;gap:6px;border-top:1px solid #f0f0f0;overflow-x:auto;scrollbar-width:none}
 .nav-row2::-webkit-scrollbar{display:none}
 #logo{font-weight:900;font-size:22px;color:#1a1a1a;cursor:pointer;user-select:none;letter-spacing:-.4px;white-space:nowrap;flex:0 0 auto}
-#about-link{font-size:14px;font-weight:600;color:#888;cursor:pointer;white-space:nowrap;padding:4px 0;transition:color .15s;text-decoration:none;border:none;background:none;font-family:inherit}
+#about-link{font-size:14px;font-weight:600;color:#888;cursor:pointer;white-space:nowrap;padding:4px 0;margin-left:10px;transition:color .15s;text-decoration:none;border:none;background:none;font-family:inherit}
 #about-link:hover{color:#1a1a1a}
 .nav-r{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .post-btn{display:flex;align-items:center;gap:6px;padding:9px 18px;background:#1a1a1a;color:#fff;border:none;border-radius:6px;font-family:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}
@@ -1204,7 +1204,13 @@ function renderProfile(){
   var since=currentUser.since||"Apr 26";
   el.innerHTML=
     '<div class="prof-banner"><span>📷</span><div><strong>Photo, email and cell number</strong> are essential — they help the community connect with you and verify your posts.</div></div>'+
-    '<div class="prof-avatar-wrap"><div class="prof-avatar">'+initials+'</div><div class="prof-edit-btn">✏</div></div>'+
+    '<div class="prof-avatar-wrap">'+
+      (currentUser.avatar
+        ? '<div class="prof-avatar" style="background:url('+currentUser.avatar+') center/cover;" title="Change photo" onclick="document.getElementById(\'prof-avatar-input\').click()"></div>'
+        : '<div class="prof-avatar" title="Upload photo" onclick="document.getElementById(\'prof-avatar-input\').click()">'+initials+'</div>')+
+      '<div class="prof-edit-btn" title="Change photo" onclick="document.getElementById(\'prof-avatar-input\').click()">✏</div>'+
+      '<input type="file" id="prof-avatar-input" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">'+
+    '</div>'+
     '<div class="prof-name">'+currentUser.name+'</div>'+
     '<div class="prof-email">'+(currentUser.email||"")+'</div>'+
     '<div class="prof-stats">'+
@@ -1268,7 +1274,7 @@ function saveProfile(){
   var suburb=document.getElementById("prof-suburb").value;
   var bio=document.getElementById("prof-bio").value.trim();
   if(!name||!email||!phone){showToast("Please fill in name, email and cell.");return;}
-  currentUser={name:name,email:email,phone:phone,suburb:suburb,bio:bio,since:currentUser.since||"Apr 26"};
+  currentUser={name:name,email:email,phone:phone,suburb:suburb,bio:bio,since:currentUser.since||"Apr 26",avatar:currentUser.avatar||""};
   localStorage.setItem("tnb_user",JSON.stringify(currentUser));
   document.getElementById("user-btn").textContent=name[0].toUpperCase();
   showToast("✓ Profile saved!");
@@ -1488,6 +1494,24 @@ function openAbout(){document.getElementById("about-bg").classList.add("open");d
 function closeAbout(){document.getElementById("about-bg").classList.remove("open");document.body.style.overflow="";}
 
 // ====================================================
+// AVATAR UPLOAD (2MB cap)
+function handleAvatarUpload(e){
+  var f=e.target.files&&e.target.files[0];
+  if(!f)return;
+  if(!f.type.indexOf("image/")===0 && !f.type.startsWith("image/")){showToast("Please select an image file.");e.target.value="";return;}
+  if(f.size>2*1024*1024){showToast("Image must be under 2MB.");e.target.value="";return;}
+  var reader=new FileReader();
+  reader.onload=function(evt){
+    if(!currentUser){showToast("Please sign in first.");return;}
+    currentUser.avatar=evt.target.result;
+    try{localStorage.setItem("tnb_user",JSON.stringify(currentUser));}
+    catch(err){showToast("Image too large to save. Try a smaller one.");currentUser.avatar="";return;}
+    renderProfile();
+    showToast("✓ Profile photo updated!");
+  };
+  reader.readAsDataURL(f);
+}
+
 // PASSWORD SHOW/HIDE TOGGLE
 function togglePass(btn,id){
   var inp=document.getElementById(id);
